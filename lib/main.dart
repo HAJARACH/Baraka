@@ -4,7 +4,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'screens/admin_screen.dart';
+import 'screens/merchant_dashboard_screen.dart';
+import 'screens/my_passes_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -107,13 +111,69 @@ class MainHomeScreen extends StatefulWidget {
 
 class _MainHomeScreenState extends State<MainHomeScreen> {
   int _currentIndex = 0;
+  int _passesRefreshKey = 0; // Incrémenté pour forcer un rechargement de MyPassesScreen
   double _userLat = 31.6258;
   double _userLng = -7.9891;
+  String? _userRole;
+  bool _isLoadingRole = false;
+  StreamSubscription<AuthState>? _authSub;
 
   @override
   void initState() {
     super.initState();
     _initGps();
+    _fetchUserRole();
+    _authSub = supabase.auth.onAuthStateChange.listen((_) {
+      _fetchUserRole();
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchUserRole() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        setState(() {
+          _userRole = null;
+          _isLoadingRole = false;
+        });
+      }
+      return;
+    }
+
+    setState(() => _isLoadingRole = true);
+    try {
+      final profile = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      final role = profile?['role']?.toString().toLowerCase() ??
+          user.userMetadata?['role']?.toString().toLowerCase() ??
+          'client';
+
+      if (mounted) {
+        setState(() {
+          _userRole = role;
+          _isLoadingRole = false;
+        });
+      }
+    } catch (_) {
+      final metaRole =
+          user.userMetadata?['role']?.toString().toLowerCase() ?? 'client';
+      if (mounted) {
+        setState(() {
+          _userRole = metaRole;
+          _isLoadingRole = false;
+        });
+      }
+    }
   }
 
   Future<void> _initGps() async {
@@ -144,7 +204,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
         builder: (_) => AuthPage(
           onAuthSuccess: () {
             Navigator.pop(context);
-            setState(() {});
+            _fetchUserRole();
             if (onSuccess != null) onSuccess();
           },
         ),
@@ -157,79 +217,192 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     final user = supabase.auth.currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _currentIndex == 0 ? "Baraka Marrakech" : "Espace Commerçant",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          if (user == null)
-            TextButton.icon(
-              onPressed: () => _openAuthModal(),
-              icon: const Icon(Icons.login, color: Color(0xFF00897B)),
-              label: const Text(
-                "Connexion",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF00897B),
-                ),
+      appBar: _currentIndex == 0
+          ? AppBar(
+              title: const Text(
+                "Baraka Marrakech",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            )
-          else ...[
-            Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Center(
-                child: Text(
-                  user.email?.split('@').first ?? 'Connecté',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.confirmation_number_outlined,
+                      color: Color(0xFF00897B)),
+                  tooltip: "Mes Pass Réservés",
+                  onPressed: () => setState(() => _currentIndex = 1),
                 ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: "Déconnexion",
-              onPressed: () async {
-                await supabase.auth.signOut();
-                setState(() => _currentIndex = 0);
-              },
-            ),
-          ],
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: _currentIndex == 0
-          ? FeedView(
-              userLat: _userLat,
-              userLng: _userLng,
-              onRequireAuth: (action) => _openAuthModal(onSuccess: action),
+                if (user == null)
+                  TextButton.icon(
+                    onPressed: () => _openAuthModal(),
+                    icon: const Icon(Icons.login, color: Color(0xFF00897B)),
+                    label: const Text(
+                      "Connexion",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00897B),
+                      ),
+                    ),
+                  )
+                else ...[
+                  if (_userRole != null)
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _userRole == 'admin'
+                            ? Colors.purple.shade50
+                            : (_userRole == 'merchant'
+                                ? const Color(0xFFE0F2F1)
+                                : Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _userRole == 'admin'
+                              ? Colors.purple.shade200
+                              : (_userRole == 'merchant'
+                                  ? const Color(0xFF80CBC4)
+                                  : Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Text(
+                        _userRole == 'admin'
+                            ? 'Admin'
+                            : (_userRole == 'merchant' ? 'Pro' : 'Client'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: _userRole == 'admin'
+                              ? Colors.purple.shade900
+                              : (_userRole == 'merchant'
+                                  ? const Color(0xFF00695C)
+                                  : Colors.grey.shade800),
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Center(
+                      child: Text(
+                        user.email?.split('@').first ?? 'Connecté',
+                        style:
+                            const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    tooltip: "Déconnexion",
+                    onPressed: () async {
+                      await supabase.auth.signOut();
+                      setState(() {
+                        _userRole = null;
+                        _currentIndex = 0;
+                      });
+                    },
+                  ),
+                ],
+                const SizedBox(width: 8),
+              ],
             )
-          : (user == null
-                ? ProLoginGuard(onLoginRequested: () => _openAuthModal())
-                : MerchantView(
-                    onOfferPublished: () => setState(() => _currentIndex = 0),
-                  )),
+          : null,
+      body: _buildCurrentBody(user),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.local_offer_outlined),
             selectedIcon: Icon(Icons.local_offer),
             label: 'Bons plans',
           ),
+          const NavigationDestination(
+            icon: Icon(Icons.confirmation_number_outlined),
+            selectedIcon: Icon(Icons.confirmation_number),
+            label: 'Mes Pass',
+          ),
           NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
-            label: 'Espace Pro',
+            icon: Icon(
+              _userRole == 'admin'
+                  ? Icons.admin_panel_settings_outlined
+                  : Icons.storefront_outlined,
+            ),
+            selectedIcon: Icon(
+              _userRole == 'admin'
+                  ? Icons.admin_panel_settings
+                  : Icons.storefront,
+            ),
+            label: _userRole == 'admin' ? 'Administration' : 'Espace Pro',
           ),
         ],
       ),
     );
   }
+
+  Widget _buildCurrentBody(User? user) {
+    if (_currentIndex == 0) {
+      return FeedView(
+        userLat: _userLat,
+        userLng: _userLng,
+        onRequireAuth: (action) => _openAuthModal(onSuccess: action),
+        onOpenMyPasses: () => setState(() {
+          _passesRefreshKey++;
+          _currentIndex = 1;
+        }),
+      );
+    }
+
+    // Onglet 1 : Mes Pass (Réservations sauvegardées)
+    if (_currentIndex == 1) {
+      return MyPassesScreen(
+        key: ValueKey(_passesRefreshKey),
+        onGoToFeed: () => setState(() => _currentIndex = 0),
+        onLoginRequested: () => _openAuthModal(),
+      );
+    }
+
+    // Onglet 2 : Espace Pro ou Administration
+    if (user == null) {
+      return ProLoginGuard(onLoginRequested: () => _openAuthModal());
+    }
+
+    if (_isLoadingRole) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_userRole == 'admin') {
+      return AdminScreen(
+        onSwitchToPro: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MerchantDashboardScreen(
+                onOfferPublished: () => setState(() => _currentIndex = 0),
+              ),
+            ),
+          );
+        },
+      );
+    } else if (_userRole == 'merchant') {
+      return MerchantDashboardScreen(
+        onOfferPublished: () => setState(() => _currentIndex = 0),
+      );
+    } else {
+      return ClientGuardView(
+        onGoToFeed: () => setState(() => _currentIndex = 0),
+        onGoToPasses: () => setState(() => _currentIndex = 1),
+        onLogout: () async {
+          await supabase.auth.signOut();
+          setState(() {
+            _userRole = null;
+            _currentIndex = 0;
+          });
+        },
+      );
+    }
+  }
 }
 
 // -------------------------------------------------------------
-// Écran Garde Espace Pro
+// Écran Garde Espace Pro (Non Connecté)
 // -------------------------------------------------------------
 class ProLoginGuard extends StatelessWidget {
   final VoidCallback onLoginRequested;
@@ -238,43 +411,170 @@ class ProLoginGuard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.storefront_outlined,
-              size: 70,
-              color: Color(0xFF00897B),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              "Espace Professionnel",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Connectez-vous à votre compte commerçant pour publier vos offres flash et valider les pass.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onLoginRequested,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00897B),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Espace Professionnel",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE0F2F1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.storefront_outlined,
+                  size: 64,
+                  color: Color(0xFF00897B),
                 ),
               ),
-              icon: const Icon(Icons.login),
-              label: const Text("Se connecter"),
-            ),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                "Espace Professionnel & Partenaires",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Connectez-vous à votre compte commerçant pour publier vos offres flash et valider les pass clients en temps réel.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey, height: 1.4),
+              ),
+              const SizedBox(height: 28),
+              ElevatedButton.icon(
+                onPressed: onLoginRequested,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00897B),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.login),
+                label: const Text(
+                  "Se connecter / S'inscrire",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------
+// Écran Garde Espace Client (Connecté en tant que client)
+// -------------------------------------------------------------
+class ClientGuardView extends StatelessWidget {
+  final VoidCallback onGoToFeed;
+  final VoidCallback onGoToPasses;
+  final VoidCallback onLogout;
+
+  const ClientGuardView({
+    super.key,
+    required this.onGoToFeed,
+    required this.onGoToPasses,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Espace Partenaire & Pro",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.lock_outline,
+                    size: 54, color: Colors.amber.shade800),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                "Espace Réservé aux Partenaires",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Vous êtes actuellement connecté avec un compte Client.\n\nCet espace est réservé aux commerçants partenaires pour publier leurs bons plans et valider les pass, ainsi qu'aux administrateurs.",
+                textAlign: TextAlign.center,
+                style:
+                    TextStyle(color: Colors.black54, fontSize: 14, height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onGoToPasses,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00897B),
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.confirmation_number),
+                label: const Text("Voir mes Pass Réservés",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: onGoToFeed,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF00897B),
+                  side: const BorderSide(color: Color(0xFF00897B)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.local_offer),
+                label: const Text("Découvrir les Bons Plans",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: onLogout,
+                icon: const Icon(Icons.logout, size: 18, color: Colors.redAccent),
+                label: const Text(
+                  "Se déconnecter / Changer de compte",
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -288,12 +588,14 @@ class FeedView extends StatefulWidget {
   final double userLat;
   final double userLng;
   final void Function(VoidCallback action) onRequireAuth;
+  final VoidCallback? onOpenMyPasses;
 
   const FeedView({
     super.key,
     required this.userLat,
     required this.userLng,
     required this.onRequireAuth,
+    this.onOpenMyPasses,
   });
 
   @override
@@ -343,11 +645,27 @@ class _FeedViewState extends State<FeedView> {
     final code = (100000 + math.Random().nextInt(900000)).toString();
 
     try {
+      // 1. Décrémenter le compteur du deal
       await supabase
           .from('deals')
           .update({'remaining_count': deal.remainingCount - 1})
           .eq('id', deal.id);
 
+      // 2. Insérer dans bookings (sans user_id, la colonne n'existe pas dans ce schéma)
+      await supabase.from('bookings').insert({
+        'deal_id': deal.id,
+        'pass_code': code,
+        'status': 'reserve',
+      });
+
+      // 3. Sauvegarder le pass_code localement pour que MyPassesScreen puisse le retrouver
+      final prefs = await SharedPreferences.getInstance();
+      final existingJson = prefs.getString('my_pass_codes_${user.id}') ?? '[]';
+      final List<dynamic> existing = jsonDecode(existingJson);
+      existing.add(code);
+      await prefs.setString('my_pass_codes_${user.id}', jsonEncode(existing));
+
+      // 4. Insérer dans passes (compatibilité secondaire — erreurs ignorées)
       try {
         await supabase.from('passes').insert({
           'deal_id': deal.id,
@@ -362,15 +680,34 @@ class _FeedViewState extends State<FeedView> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => PassResultPage(deal: deal, code: code),
+          builder: (_) => PassResultPage(
+            deal: deal,
+            code: code,
+            onGoToMyPasses: () {
+              Navigator.pop(context);
+              if (widget.onOpenMyPasses != null) {
+                widget.onOpenMyPasses!();
+              }
+            },
+          ),
         ),
       );
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Échec du blocage : $e")));
+      // Si l'insert bookings échoue, on réincrémente le compteur pour éviter une perte
+      try {
+        await supabase
+            .from('deals')
+            .update({'remaining_count': deal.remainingCount})
+            .eq('id', deal.id);
+      } catch (_) {}
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Échec du blocage : $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -548,7 +885,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                   height: 160,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (context, error, stackTrace) => Container(
                     height: 160,
                     color: Colors.grey.shade200,
                     child: const Icon(
@@ -847,12 +1184,15 @@ class AuthPage extends StatefulWidget {
 class _AuthPageState extends State<AuthPage> {
   final _emailCtrl = TextEditingController();
   final _pwdCtrl = TextEditingController();
+  final _businessNameCtrl = TextEditingController();
+  String _selectedRole = 'client'; // 'client' ou 'merchant'
   bool _isSignUp = false;
   bool _loading = false;
 
   Future<void> _submit() async {
     final email = _emailCtrl.text.trim();
     final pwd = _pwdCtrl.text.trim();
+    final bName = _businessNameCtrl.text.trim();
 
     if (email.isEmpty || pwd.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -863,15 +1203,38 @@ class _AuthPageState extends State<AuthPage> {
       return;
     }
 
+    if (_isSignUp && _selectedRole == 'merchant' && bName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Veuillez renseigner le nom de votre établissement."),
+        ),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
       if (_isSignUp) {
-        await supabase.auth.signUp(
+        final res = await supabase.auth.signUp(
           email: email,
           password: pwd,
-          data: {'role': 'client'},
+          data: {
+            'role': _selectedRole,
+            if (_selectedRole == 'merchant') 'business_name': bName,
+          },
         );
+
+        if (res.user != null) {
+          try {
+            await supabase.from('profiles').upsert({
+              'id': res.user!.id,
+              'email': email,
+              'role': _selectedRole,
+              if (_selectedRole == 'merchant') 'business_name': bName,
+            });
+          } catch (_) {}
+        }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -900,6 +1263,7 @@ class _AuthPageState extends State<AuthPage> {
   void dispose() {
     _emailCtrl.dispose();
     _pwdCtrl.dispose();
+    _businessNameCtrl.dispose();
     super.dispose();
   }
 
@@ -927,12 +1291,57 @@ class _AuthPageState extends State<AuthPage> {
               const SizedBox(height: 6),
               Text(
                 _isSignUp
-                    ? "Créez votre compte pour réserver"
+                    ? "Créez votre compte pour commencer"
                     : "Connectez-vous pour continuer",
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.grey),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
+
+              // Choix du type de compte lors de l'inscription
+              if (_isSignUp) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.person, size: 16),
+                            SizedBox(width: 6),
+                            Text("Client"),
+                          ],
+                        ),
+                        selected: _selectedRole == 'client',
+                        selectedColor: const Color(0xFFE0F2F1),
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedRole = 'client');
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.storefront, size: 16),
+                            SizedBox(width: 6),
+                            Text("Commerçant"),
+                          ],
+                        ),
+                        selected: _selectedRole == 'merchant',
+                        selectedColor: const Color(0xFFE0F2F1),
+                        onSelected: (val) {
+                          if (val) setState(() => _selectedRole = 'merchant');
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+
               TextField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
@@ -952,6 +1361,20 @@ class _AuthPageState extends State<AuthPage> {
                   border: OutlineInputBorder(),
                 ),
               ),
+
+              if (_isSignUp && _selectedRole == 'merchant') ...[
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _businessNameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: "Nom de votre établissement",
+                    hintText: "Ex : Riad Jasmine, Café de la Poste...",
+                    prefixIcon: Icon(Icons.store),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -990,8 +1413,14 @@ class _AuthPageState extends State<AuthPage> {
 class PassResultPage extends StatelessWidget {
   final DealItem deal;
   final String code;
+  final VoidCallback? onGoToMyPasses;
 
-  const PassResultPage({super.key, required this.deal, required this.code});
+  const PassResultPage({
+    super.key,
+    required this.deal,
+    required this.code,
+    this.onGoToMyPasses,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1000,7 +1429,7 @@ class PassResultPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF00897B),
       appBar: AppBar(
-        title: const Text("Pass Baraka"),
+        title: const Text("Pass Baraka", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
@@ -1008,64 +1437,120 @@ class PassResultPage extends StatelessWidget {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  deal.businessName.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade600,
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 16,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  deal.title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      deal.businessName.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade600,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      deal.title,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    QrImageView(
+                      data: payload,
+                      version: QrVersions.auto,
+                      size: 190.0,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: Color(0xFF00897B),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Code secret à présenter sur place :",
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      code,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 6,
+                        color: Color(0xFF00897B),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "À régler sur place : ${deal.discountedPrice.toStringAsFixed(0)} MAD",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 18),
+                    // Notification de sauvegarde automatique
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F2F1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.cloud_done, color: Color(0xFF00897B), size: 22),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              "Pass sauvegardé automatiquement dans l'onglet 'Mes Pass' tant qu'il n'est pas utilisé ou expiré.",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF00695C),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    if (onGoToMyPasses != null)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: onGoToMyPasses,
+                          icon: const Icon(Icons.confirmation_number),
+                          label: const Text("Voir tous mes pass sauvegardés"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00897B),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                QrImageView(
-                  data: payload,
-                  version: QrVersions.auto,
-                  size: 200.0,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: Color(0xFF00897B),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Code secret de validation :",
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  code,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 6,
-                    color: Color(0xFF00897B),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "À régler sur place : ${deal.discountedPrice.toStringAsFixed(0)} MAD",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

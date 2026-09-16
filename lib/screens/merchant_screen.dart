@@ -70,6 +70,7 @@ class _MerchantScreenState extends State<MerchantScreen> {
       _isAlreadyRedeemed = true;
     });
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Pass validé et marqué comme consommé en base !"),
