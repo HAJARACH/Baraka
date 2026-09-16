@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/deal.dart';
 import '../services/favorites_service.dart';
+import '../theme/app_theme.dart';
 
 class DealCard extends StatefulWidget {
   final Deal deal;
@@ -110,7 +111,7 @@ class _DealCardState extends State<DealCard> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00897B),
+                      color: BarakaColors.terracotta,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -197,7 +198,7 @@ class _DealCardState extends State<DealCard> {
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.near_me_outlined, size: 13, color: Color(0xFF00897B)),
+                          const Icon(Icons.near_me_outlined, size: 13, color: BarakaColors.primary),
                           const SizedBox(width: 3),
                           Text(
                             "${distanceKm.toStringAsFixed(1)} km",
@@ -223,7 +224,7 @@ class _DealCardState extends State<DealCard> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFF00897B),
+                              color: BarakaColors.primary,
                             ),
                           ),
                           const SizedBox(width: 8),

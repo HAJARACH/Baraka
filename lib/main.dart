@@ -11,13 +11,15 @@ import 'screens/favorites_screen.dart';
 import 'screens/merchant_dashboard_screen.dart';
 import 'screens/my_passes_screen.dart';
 import 'services/favorites_service.dart';
+import 'theme/app_theme.dart';
+import 'widgets/baraka_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
     url: 'https://uagtvliyqqhdoyrbnjgh.supabase.co',
-    anonKey:
+    publishableKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhZ3R2bGl5cXFoZG95cmJuamdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMjUxODcsImV4cCI6MjEwNDkwMTE4N30.YnKBxUfWkUkakMQsGKrQ_CQAwzF1DXMwg_wxWxfuN2Q',
   );
 
@@ -34,14 +36,7 @@ class BarakaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Baraka Marrakech',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00897B),
-          primary: const Color(0xFF00897B),
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-      ),
+      theme: BarakaTheme.lightTheme,
       home: const MainHomeScreen(),
     );
   }
@@ -334,10 +329,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     return Scaffold(
       appBar: _currentIndex == 0
           ? AppBar(
-              title: const Text(
-                "Baraka Marrakech",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              title: const BarakaAppBarTitle(),
               actions: [
                 IconButton(
                   icon: ValueListenableBuilder<Set<String>>(
@@ -346,12 +338,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                     builder: (context, favs, _) {
                       const icon = Icon(
                         Icons.favorite_outline,
-                        color: Colors.redAccent,
+                        color: BarakaColors.terracotta,
                       );
                       if (favs.isNotEmpty) {
                         return Badge(
                           label: Text('${favs.length}'),
-                          backgroundColor: Colors.redAccent,
+                          backgroundColor: BarakaColors.terracotta,
                           child: icon,
                         );
                       }
@@ -364,7 +356,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 IconButton(
                   icon: const Icon(
                     Icons.confirmation_number_outlined,
-                    color: Color(0xFF00897B),
+                    color: BarakaColors.primary,
                   ),
                   tooltip: "Mes Pass Réservés",
                   onPressed: () => setState(() => _currentIndex = 2),
@@ -372,12 +364,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                 if (user == null)
                   TextButton.icon(
                     onPressed: () => _openAuthModal(),
-                    icon: const Icon(Icons.login, color: Color(0xFF00897B)),
+                    icon: const Icon(Icons.login, color: BarakaColors.primary),
                     label: const Text(
                       "Connexion",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF00897B),
+                        color: BarakaColors.primary,
                       ),
                     ),
                   )
@@ -391,16 +383,16 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: _userRole == 'admin'
-                            ? Colors.purple.shade50
+                            ? BarakaColors.terracottaLight
                             : (_userRole == 'merchant'
-                                ? const Color(0xFFE0F2F1)
+                                ? BarakaColors.sage
                                 : Colors.grey.shade200),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _userRole == 'admin'
-                              ? Colors.purple.shade200
+                              ? BarakaColors.terracotta
                               : (_userRole == 'merchant'
-                                  ? const Color(0xFF80CBC4)
+                                  ? BarakaColors.primaryLight
                                   : Colors.grey.shade300),
                         ),
                       ),
@@ -412,10 +404,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: _userRole == 'admin'
-                              ? Colors.purple.shade900
+                              ? BarakaColors.terracottaDark
                               : (_userRole == 'merchant'
-                                  ? const Color(0xFF00695C)
-                                  : Colors.grey.shade800),
+                                  ? BarakaColors.primaryDark
+                                  : BarakaColors.textPrimary),
                         ),
                       ),
                     ),
@@ -657,13 +649,13 @@ class ProLoginGuard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFE0F2F1),
+                  color: BarakaColors.sage,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.storefront_outlined,
                   size: 64,
-                  color: Color(0xFF00897B),
+                  color: BarakaColors.primary,
                 ),
               ),
               const SizedBox(height: 20),
@@ -682,7 +674,7 @@ class ProLoginGuard extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onLoginRequested,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00897B),
+                  backgroundColor: BarakaColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 28,
@@ -741,12 +733,15 @@ class ClientGuardView extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
+                decoration: const BoxDecoration(
+                  color: BarakaColors.terracottaLight,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.lock_outline,
-                    size: 54, color: Colors.amber.shade800),
+                child: const Icon(
+                  Icons.lock_outline,
+                  size: 54,
+                  color: BarakaColors.terracotta,
+                ),
               ),
               const SizedBox(height: 18),
               const Text(
@@ -765,31 +760,37 @@ class ClientGuardView extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onGoToPasses,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00897B),
+                  backgroundColor: BarakaColors.primary,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 icon: const Icon(Icons.confirmation_number),
-                label: const Text("Voir mes Pass Réservés",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  "Voir mes Pass Réservés",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: onGoToFeed,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF00897B),
-                  side: const BorderSide(color: Color(0xFF00897B)),
+                  foregroundColor: BarakaColors.primary,
+                  side: const BorderSide(color: BarakaColors.primary),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 icon: const Icon(Icons.local_offer),
-                label: const Text("Découvrir les Bons Plans",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  "Découvrir les Bons Plans",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 12),
               TextButton.icon(
@@ -1168,7 +1169,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00897B),
+                      color: BarakaColors.terracotta,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -1220,7 +1221,9 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                             padding: const EdgeInsets.all(7),
                             child: Icon(
                               isFav ? Icons.favorite : Icons.favorite_border,
-                              color: isFav ? Colors.redAccent : Colors.black87,
+                              color: isFav
+                                  ? BarakaColors.terracotta
+                                  : Colors.black87,
                               size: 20,
                             ),
                           ),
@@ -1252,7 +1255,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF00897B),
+                          color: BarakaColors.primary,
                         ),
                       ),
                     ],
@@ -1276,7 +1279,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFF00897B),
+                              color: BarakaColors.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1294,7 +1297,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                             ? widget.onBook
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
+                          backgroundColor: BarakaColors.primary,
                           foregroundColor: Colors.white,
                         ),
                         child: Text("Bloquer (${widget.deal.remainingCount})"),
@@ -1343,7 +1346,8 @@ class DealDetailPage extends StatelessWidget {
               return IconButton(
                 icon: Icon(
                   isFav ? Icons.favorite : Icons.favorite_border,
-                  color: isFav ? Colors.redAccent : Colors.black87,
+                  color:
+                      isFav ? BarakaColors.terracotta : BarakaColors.textPrimary,
                 ),
                 tooltip: isFav ? "Retirer des favoris" : "Ajouter aux favoris",
                 onPressed: onToggleFavorite,
@@ -1377,7 +1381,7 @@ class DealDetailPage extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00897B),
+                          color: BarakaColors.terracotta,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -1446,7 +1450,7 @@ class DealDetailPage extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF00897B),
+                              color: BarakaColors.primary,
                             ),
                           ),
                         ],
@@ -1464,11 +1468,12 @@ class DealDetailPage extends StatelessWidget {
                           return OutlinedButton.icon(
                             onPressed: onToggleFavorite,
                             style: OutlinedButton.styleFrom(
-                              foregroundColor:
-                                  isFav ? Colors.redAccent : Colors.black87,
+                              foregroundColor: isFav
+                                  ? BarakaColors.terracotta
+                                  : Colors.black87,
                               side: BorderSide(
                                 color: isFav
-                                    ? Colors.redAccent
+                                    ? BarakaColors.terracotta
                                     : Colors.grey.shade400,
                                 width: 1.5,
                               ),
@@ -1502,7 +1507,7 @@ class DealDetailPage extends StatelessWidget {
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00897B),
+                            backgroundColor: BarakaColors.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -1638,24 +1643,14 @@ class _AuthPageState extends State<AuthPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.flash_on, size: 60, color: Color(0xFF00897B)),
-              const SizedBox(height: 12),
-              const Text(
-                "BARAKA",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2,
-                  color: Color(0xFF00897B),
-                ),
-              ),
-              const SizedBox(height: 6),
+              const BarakaLogo(size: 115, showTagline: true),
+              const SizedBox(height: 18),
               Text(
                 _isSignUp
                     ? "Créez votre compte pour commencer"
                     : "Connectez-vous pour continuer",
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
+                style: const TextStyle(color: BarakaColors.textSecondary),
               ),
               const SizedBox(height: 20),
 
@@ -1674,7 +1669,7 @@ class _AuthPageState extends State<AuthPage> {
                           ],
                         ),
                         selected: _selectedRole == 'client',
-                        selectedColor: const Color(0xFFE0F2F1),
+                        selectedColor: BarakaColors.sage,
                         onSelected: (val) {
                           if (val) setState(() => _selectedRole = 'client');
                         },
@@ -1692,7 +1687,7 @@ class _AuthPageState extends State<AuthPage> {
                           ],
                         ),
                         selected: _selectedRole == 'merchant',
-                        selectedColor: const Color(0xFFE0F2F1),
+                        selectedColor: BarakaColors.sage,
                         onSelected: (val) {
                           if (val) setState(() => _selectedRole = 'merchant');
                         },
@@ -1743,7 +1738,7 @@ class _AuthPageState extends State<AuthPage> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00897B),
+                    backgroundColor: BarakaColors.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: _loading
@@ -1754,10 +1749,14 @@ class _AuthPageState extends State<AuthPage> {
               const SizedBox(height: 14),
               TextButton(
                 onPressed: () => setState(() => _isSignUp = !_isSignUp),
+                style: TextButton.styleFrom(
+                  foregroundColor: BarakaColors.terracotta,
+                ),
                 child: Text(
                   _isSignUp
                       ? "Déjà un compte ? Se connecter"
                       : "Nouveau ? Créer un compte",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -1788,7 +1787,7 @@ class PassResultPage extends StatelessWidget {
     final payload = jsonEncode({'deal_id': deal.id, 'code': code});
 
     return Scaffold(
-      backgroundColor: const Color(0xFF00897B),
+      backgroundColor: BarakaColors.primary,
       appBar: AppBar(
         title: const Text("Pass Baraka", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
@@ -1819,10 +1818,10 @@ class PassResultPage extends StatelessWidget {
                   children: [
                     Text(
                       deal.businessName.toUpperCase(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade600,
+                        color: BarakaColors.textSecondary,
                         letterSpacing: 1.1,
                       ),
                     ),
@@ -1833,6 +1832,7 @@ class PassResultPage extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: BarakaColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 18),
@@ -1842,13 +1842,13 @@ class PassResultPage extends StatelessWidget {
                       size: 190.0,
                       eyeStyle: const QrEyeStyle(
                         eyeShape: QrEyeShape.square,
-                        color: Color(0xFF00897B),
+                        color: BarakaColors.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       "Code secret à présenter sur place :",
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      style: TextStyle(color: BarakaColors.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -1857,32 +1857,36 @@ class PassResultPage extends StatelessWidget {
                         fontSize: 32,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 6,
-                        color: Color(0xFF00897B),
+                        color: BarakaColors.terracotta,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       "À régler sur place : ${deal.discountedPrice.toStringAsFixed(0)} MAD",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: BarakaColors.primary,
+                      ),
                     ),
                     const SizedBox(height: 18),
                     // Notification de sauvegarde automatique
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE0F2F1),
+                        color: BarakaColors.sage,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.cloud_done, color: Color(0xFF00897B), size: 22),
+                          Icon(Icons.cloud_done, color: BarakaColors.primary, size: 22),
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               "Pass sauvegardé automatiquement dans l'onglet 'Mes Pass' tant qu'il n'est pas utilisé ou expiré.",
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF00695C),
+                                color: BarakaColors.primaryDark,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1899,7 +1903,7 @@ class PassResultPage extends StatelessWidget {
                           icon: const Icon(Icons.confirmation_number),
                           label: const Text("Voir tous mes pass sauvegardés"),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00897B),
+                            backgroundColor: BarakaColors.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
@@ -2079,7 +2083,7 @@ class _MerchantViewState extends State<MerchantView> {
             child: ElevatedButton(
               onPressed: _loading ? null : _publish,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00897B),
+                backgroundColor: BarakaColors.primary,
                 foregroundColor: Colors.white,
               ),
               child: _loading

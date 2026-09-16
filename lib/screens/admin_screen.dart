@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_theme.dart';
 import 'merchant_dashboard_screen.dart';
 
 class AdminScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Rôle mis à jour en '$newRole' avec succès !"),
-            backgroundColor: const Color(0xFF00897B),
+            backgroundColor: BarakaColors.primary,
           ),
         );
         setState(() {}); // Rafraîchit l'affichage
@@ -91,7 +92,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Offre supprimée de la plateforme avec succès."),
-            backgroundColor: Color(0xFF00897B),
+            backgroundColor: BarakaColors.primary,
           ),
         );
         setState(() {});
@@ -101,7 +102,7 @@ class _AdminScreenState extends State<AdminScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Erreur suppression : $e"),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: BarakaColors.terracotta,
           ),
         );
       }
@@ -109,14 +110,14 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   void _openProView() {
-    if (widget.onSwitchToPro != null) {
-      widget.onSwitchToPro!();
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MerchantDashboardScreen()),
-      );
-    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const Scaffold(
+          body: MerchantDashboardScreen(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -124,17 +125,17 @@ class _AdminScreenState extends State<AdminScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: BarakaColors.background,
         appBar: AppBar(
           title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.purple.shade50,
+                  color: BarakaColors.sage,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.admin_panel_settings, color: Colors.deepPurple),
+                child: const Icon(Icons.admin_panel_settings, color: BarakaColors.primary),
               ),
               const SizedBox(width: 10),
               const Column(
@@ -146,18 +147,18 @@ class _AdminScreenState extends State<AdminScreen> {
                   ),
                   Text(
                     "Supervision de la plateforme",
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(fontSize: 11, color: BarakaColors.textSecondary),
                   ),
                 ],
               ),
             ],
           ),
           backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          foregroundColor: BarakaColors.textPrimary,
           elevation: 0,
           actions: [
             IconButton(
-              icon: const Icon(Icons.storefront, color: Color(0xFF00897B)),
+              icon: const Icon(Icons.storefront, color: BarakaColors.primary),
               tooltip: "Aperçu Espace Commerçant",
               onPressed: _openProView,
             ),
@@ -167,7 +168,7 @@ class _AdminScreenState extends State<AdminScreen> {
               onPressed: () => setState(() {}),
             ),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.redAccent),
+              icon: const Icon(Icons.logout, color: BarakaColors.terracotta),
               tooltip: "Déconnexion",
               onPressed: () async {
                 await supabase.auth.signOut();
@@ -175,8 +176,9 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
           ],
           bottom: const TabBar(
-            labelColor: Colors.deepPurple,
-            indicatorColor: Colors.deepPurple,
+            labelColor: BarakaColors.primary,
+            indicatorColor: BarakaColors.primary,
+            indicatorWeight: 3,
             tabs: [
               Tab(
                 icon: Icon(Icons.dashboard_outlined),
@@ -194,7 +196,7 @@ class _AdminScreenState extends State<AdminScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: Colors.deepPurple),
+                child: CircularProgressIndicator(color: BarakaColors.primary),
               );
             }
 
@@ -245,7 +247,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF4A148C), Color(0xFF7B1FA2)],
+                            colors: [BarakaColors.primaryDark, BarakaColors.primary],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -303,21 +305,21 @@ class _AdminScreenState extends State<AdminScreen> {
                             title: "Deals Actifs",
                             value: dealsCount.toString(),
                             icon: Icons.local_offer,
-                            color: const Color(0xFF00897B),
+                            color: BarakaColors.primary,
                           ),
                           const SizedBox(width: 10),
                           _kpiCard(
                             title: "Réservations",
                             value: bookingsCount.toString(),
                             icon: Icons.confirmation_number,
-                            color: Colors.orange.shade800,
+                            color: BarakaColors.terracotta,
                           ),
                           const SizedBox(width: 10),
                           _kpiCard(
                             title: "Utilisateurs",
                             value: profiles.length.toString(),
                             icon: Icons.people,
-                            color: Colors.deepPurple,
+                            color: BarakaColors.primaryLight,
                           ),
                         ],
                       ),
@@ -334,8 +336,8 @@ class _AdminScreenState extends State<AdminScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _rolePill("Admins", adminsCount, Colors.purple),
-                            _rolePill("Commerçants", merchantsCount, const Color(0xFF00897B)),
+                            _rolePill("Admins", adminsCount, BarakaColors.terracotta),
+                            _rolePill("Commerçants", merchantsCount, BarakaColors.primary),
                             _rolePill("Clients", clientsCount, Colors.blueGrey),
                           ],
                         ),
@@ -351,186 +353,188 @@ class _AdminScreenState extends State<AdminScreen> {
                             style: TextStyle(
                                 fontSize: 17, fontWeight: FontWeight.bold),
                           ),
-                          Text(
-                            "${profiles.length} comptes",
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 13),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: BarakaColors.sage,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              "${profiles.length} total",
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: BarakaColors.primary),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
                       // Liste des profils
-                      if (profiles.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Text("Aucun profil enregistré dans Supabase."),
-                          ),
-                        )
-                      else
-                        ...profiles.map((p) {
-                          final currentUserId = supabase.auth.currentUser?.id;
-                          final isCurrent = p['id'] == currentUserId;
-                          final role = (p['role'] ?? 'client').toString().toLowerCase();
+                      ...profiles.map((p) {
+                        final role = p['role'] ?? 'client';
+                        final isCurrent = p['id'] == supabase.auth.currentUser?.id;
 
-                          return Card(
-                            elevation: 0,
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: isCurrent
-                                    ? Colors.deepPurple.shade200
-                                    : Colors.grey.shade200,
+                        return Card(
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: isCurrent
+                                  ? BarakaColors.primary
+                                  : Colors.grey.shade200,
+                              width: isCurrent ? 1.5 : 1,
+                            ),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: role == 'admin'
+                                  ? BarakaColors.terracottaLight
+                                  : (role == 'merchant'
+                                      ? BarakaColors.sage
+                                      : Colors.grey.shade100),
+                              child: Icon(
+                                role == 'admin'
+                                    ? Icons.admin_panel_settings
+                                    : (role == 'merchant'
+                                        ? Icons.storefront
+                                        : Icons.person),
+                                color: role == 'admin'
+                                    ? BarakaColors.terracotta
+                                    : (role == 'merchant'
+                                        ? BarakaColors.primary
+                                        : Colors.grey.shade700),
                               ),
                             ),
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: role == 'admin'
-                                    ? Colors.purple.shade100
-                                    : (role == 'merchant'
-                                        ? const Color(0xFFE0F2F1)
-                                        : Colors.grey.shade100),
-                                child: Icon(
-                                  role == 'admin'
-                                      ? Icons.admin_panel_settings
-                                      : (role == 'merchant'
-                                          ? Icons.storefront
-                                          : Icons.person),
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    p['email'] ?? 'Sans email',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                if (isCurrent)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.deepPurple.shade50,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      "Vous",
+                                      style: TextStyle(
+                                        color: Colors.deepPurple,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                p['business_name'] != null &&
+                                        (p['business_name'] as String).isNotEmpty
+                                    ? "Établissement: ${p['business_name']}"
+                                    : "Rôle actuel : $role",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              tooltip: "Changer le rôle",
+                              icon: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
                                   color: role == 'admin'
-                                      ? Colors.purple.shade800
+                                      ? BarakaColors.terracottaLight
                                       : (role == 'merchant'
-                                          ? const Color(0xFF00897B)
-                                          : Colors.grey.shade700),
-                                ),
-                              ),
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      p['email'] ?? 'Sans email',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ),
-                                  if (isCurrent)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.deepPurple.shade50,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Text(
-                                        "Vous",
-                                        style: TextStyle(
-                                          color: Colors.deepPurple,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  p['business_name'] != null &&
-                                          (p['business_name'] as String).isNotEmpty
-                                      ? "Établissement: ${p['business_name']}"
-                                      : "Rôle actuel : $role",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              trailing: PopupMenuButton<String>(
-                                tooltip: "Changer le rôle",
-                                icon: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
+                                          ? BarakaColors.sage
+                                          : Colors.grey.shade100),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
                                     color: role == 'admin'
-                                        ? Colors.purple.shade50
+                                        ? BarakaColors.terracotta
                                         : (role == 'merchant'
-                                            ? const Color(0xFFE0F2F1)
-                                            : Colors.grey.shade100),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: role == 'admin'
-                                          ? Colors.purple.shade200
-                                          : (role == 'merchant'
-                                              ? const Color(0xFF80CBC4)
-                                              : Colors.grey.shade300),
-                                    ),
+                                            ? BarakaColors.primary
+                                            : Colors.grey.shade300),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        role.toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: role == 'admin'
-                                              ? Colors.purple.shade800
-                                              : (role == 'merchant'
-                                                  ? const Color(0xFF00695C)
-                                                  : Colors.grey.shade800),
-                                        ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      role.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: role == 'admin'
+                                            ? BarakaColors.terracotta
+                                            : (role == 'merchant'
+                                                ? BarakaColors.primary
+                                                : Colors.grey.shade800),
                                       ),
-                                      const Icon(Icons.arrow_drop_down, size: 16),
+                                    ),
+                                    const Icon(Icons.arrow_drop_down, size: 16),
+                                  ],
+                                ),
+                              ),
+                              onSelected: (newRole) {
+                                if (newRole != role) {
+                                  _updateUserRole(p['id'], newRole);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'client',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.person, color: Colors.grey, size: 18),
+                                      SizedBox(width: 8),
+                                      Text("Client"),
                                     ],
                                   ),
                                 ),
-                                onSelected: (newRole) {
-                                  if (newRole != role) {
-                                    _updateUserRole(p['id'], newRole);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'client',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.person, color: Colors.grey, size: 18),
-                                        SizedBox(width: 8),
-                                        Text("Client"),
-                                      ],
-                                    ),
+                                const PopupMenuItem(
+                                  value: 'merchant',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.storefront,
+                                          color: BarakaColors.primary, size: 18),
+                                      SizedBox(width: 8),
+                                      Text("Commerçant (Pro)"),
+                                    ],
                                   ),
-                                  const PopupMenuItem(
-                                    value: 'merchant',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.storefront,
-                                            color: Color(0xFF00897B), size: 18),
-                                        SizedBox(width: 8),
-                                        Text("Commerçant (Pro)"),
-                                      ],
-                                    ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'admin',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.admin_panel_settings,
+                                          color: BarakaColors.terracotta, size: 18),
+                                      SizedBox(width: 8),
+                                      Text("Administrateur"),
+                                    ],
                                   ),
-                                  const PopupMenuItem(
-                                    value: 'admin',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.admin_panel_settings,
-                                            color: Colors.deepPurple, size: 18),
-                                        SizedBox(width: 8),
-                                        Text("Administrateur"),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          );
-                        }),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -600,7 +604,7 @@ class _AdminScreenState extends State<AdminScreen> {
                                           Text(
                                             business,
                                             style: const TextStyle(
-                                                color: Color(0xFF00897B),
+                                                color: BarakaColors.primary,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w500),
                                           ),

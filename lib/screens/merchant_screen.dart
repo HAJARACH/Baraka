@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_theme.dart';
 
 class MerchantScreen extends StatefulWidget {
   const MerchantScreen({super.key});
@@ -74,7 +75,7 @@ class _MerchantScreenState extends State<MerchantScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Pass validé et marqué comme consommé en base !"),
-        backgroundColor: Color(0xFF00897B),
+        backgroundColor: BarakaColors.primary,
       ),
     );
   }
@@ -88,13 +89,14 @@ class _MerchantScreenState extends State<MerchantScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: BarakaColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        foregroundColor: BarakaColors.textPrimary,
         title: const Text(
           "Espace Commerçant",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -137,13 +139,13 @@ class _MerchantScreenState extends State<MerchantScreen> {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             hintText: "Ex : 492810",
-                            prefixIcon: const Icon(Icons.pin, color: Color(0xFF00897B)),
+                            prefixIcon: const Icon(Icons.pin, color: BarakaColors.primary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF00897B), width: 2),
+                              borderSide: const BorderSide(color: BarakaColors.primary, width: 2),
                             ),
                           ),
                           onSubmitted: (_) => _verifyPass(),
@@ -153,7 +155,7 @@ class _MerchantScreenState extends State<MerchantScreen> {
                       ElevatedButton(
                         onPressed: _isSearching ? null : _verifyPass,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
+                          backgroundColor: BarakaColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           shape: RoundedRectangleBorder(
@@ -184,7 +186,7 @@ class _MerchantScreenState extends State<MerchantScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: _isAlreadyRedeemed ? Colors.grey : const Color(0xFF00897B),
+                    color: _isAlreadyRedeemed ? Colors.grey : BarakaColors.primary,
                     width: 2,
                   ),
                 ),
@@ -197,13 +199,13 @@ class _MerchantScreenState extends State<MerchantScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _isAlreadyRedeemed ? Colors.grey.shade200 : const Color(0xFFE0F2F1),
+                            color: _isAlreadyRedeemed ? Colors.grey.shade200 : BarakaColors.sage,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             _isAlreadyRedeemed ? "DÉJÀ ENCAISSÉ" : "PASS VALIDE",
                             style: TextStyle(
-                              color: _isAlreadyRedeemed ? Colors.grey.shade700 : const Color(0xFF00897B),
+                              color: _isAlreadyRedeemed ? Colors.grey.shade700 : BarakaColors.primary,
                               fontWeight: FontWeight.w900,
                               fontSize: 13,
                             ),
@@ -238,7 +240,7 @@ class _MerchantScreenState extends State<MerchantScreen> {
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF00897B),
+                            color: BarakaColors.primary,
                           ),
                         ),
                       ],
@@ -254,7 +256,7 @@ class _MerchantScreenState extends State<MerchantScreen> {
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
+                          backgroundColor: BarakaColors.primary,
                           foregroundColor: Colors.white,
                           disabledBackgroundColor: Colors.grey.shade300,
                           padding: const EdgeInsets.symmetric(vertical: 14),

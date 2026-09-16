@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/booking.dart';
+import '../theme/app_theme.dart';
 import 'pass_screen.dart';
 
 class MyPassesScreen extends StatefulWidget {
@@ -86,29 +87,29 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFE0F2F1),
+                    color: BarakaColors.sage,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.confirmation_number_outlined,
-                      size: 60, color: Color(0xFF00897B)),
+                      size: 60, color: BarakaColors.primary),
                 ),
                 const SizedBox(height: 20),
                 const Text(
                   "Connectez-vous pour voir vos pass",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: BarakaColors.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 const Text(
                   "Vos pass et QR codes réservés sont conservés en toute sécurité dans votre espace tant qu'ils ne sont pas consommés ou expirés.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, height: 1.4),
+                  style: TextStyle(color: BarakaColors.textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: widget.onLoginRequested,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00897B),
+                    backgroundColor: BarakaColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 14),
@@ -129,14 +130,14 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: BarakaColors.background,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          foregroundColor: Colors.black87,
+          foregroundColor: BarakaColors.textPrimary,
           title: const Row(
             children: [
-              Icon(Icons.confirmation_number, color: Color(0xFF00897B)),
+              Icon(Icons.confirmation_number, color: BarakaColors.primary),
               SizedBox(width: 8),
               Text(
                 "Mes Pass Réservés",
@@ -152,8 +153,9 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
             ),
           ],
           bottom: const TabBar(
-            labelColor: Color(0xFF00897B),
-            indicatorColor: Color(0xFF00897B),
+            labelColor: BarakaColors.primary,
+            indicatorColor: BarakaColors.primary,
+            indicatorWeight: 3,
             tabs: [
               Tab(icon: Icon(Icons.check_circle_outline), text: "Pass Actifs"),
               Tab(icon: Icon(Icons.history), text: "Historique"),
@@ -165,7 +167,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                child: CircularProgressIndicator(color: Color(0xFF00897B)),
+                child: CircularProgressIndicator(color: BarakaColors.primary),
               );
             }
 
@@ -214,7 +216,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                 ElevatedButton.icon(
                   onPressed: widget.onGoToFeed,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00897B),
+                    backgroundColor: BarakaColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 22, vertical: 12),
@@ -244,7 +246,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
             color: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFF80CBC4), width: 1.5),
+              side: const BorderSide(color: BarakaColors.sage, width: 1.5),
             ),
             margin: const EdgeInsets.only(bottom: 14),
             child: InkWell(
@@ -283,7 +285,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                                 style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF00897B),
+                                  color: BarakaColors.primary,
                                   letterSpacing: 1,
                                 ),
                               ),
@@ -294,8 +296,6 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -304,13 +304,13 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE0F2F1),
+                            color: BarakaColors.sage,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Text(
                             "VALIDE",
                             style: TextStyle(
-                              color: Color(0xFF00897B),
+                              color: BarakaColors.primary,
                               fontSize: 11,
                               fontWeight: FontWeight.w900,
                             ),
@@ -337,8 +337,9 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00897B).withValues(alpha: 0.1),
+                                color: BarakaColors.sageLight,
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: BarakaColors.sage),
                               ),
                               child: Text(
                                 booking.passCode,
@@ -346,7 +347,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                                   fontSize: 20,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 3,
-                                  color: Color(0xFF00897B),
+                                  color: BarakaColors.primary,
                                 ),
                               ),
                             ),
@@ -357,15 +358,15 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.timer_outlined,
-                                    size: 14, color: Colors.orange.shade800),
+                                const Icon(Icons.timer_outlined,
+                                    size: 14, color: BarakaColors.terracotta),
                                 const SizedBox(width: 4),
                                 Text(
                                   booking.remainingTimeFormatted,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.orange.shade900,
+                                    color: BarakaColors.terracotta,
                                   ),
                                 ),
                               ],
@@ -393,7 +394,7 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
                         icon: const Icon(Icons.qr_code, size: 18),
                         label: const Text("Ouvrir le Pass & QR Code"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
+                          backgroundColor: BarakaColors.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -459,12 +460,12 @@ class _MyPassesScreenState extends State<MyPassesScreen> {
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: isRedeemed
-                    ? const Color(0xFFE0F2F1)
+                    ? BarakaColors.sage
                     : Colors.grey.shade100,
                 child: Icon(
                   isRedeemed ? Icons.check : Icons.timer_off_outlined,
                   color: isRedeemed
-                      ? const Color(0xFF00897B)
+                      ? BarakaColors.primary
                       : Colors.grey.shade600,
                 ),
               ),

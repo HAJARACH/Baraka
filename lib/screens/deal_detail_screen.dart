@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/deal.dart';
 import '../services/favorites_service.dart';
+import '../theme/app_theme.dart';
 
 class DealDetailScreen extends StatefulWidget {
   final Deal deal;
@@ -57,7 +58,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
               return IconButton(
                 icon: Icon(
                   isFav ? Icons.favorite : Icons.favorite_border,
-                  color: isFav ? Colors.redAccent : Colors.black87,
+                  color: isFav ? BarakaColors.terracotta : BarakaColors.textPrimary,
                 ),
                 tooltip: isFav ? "Retirer des favoris" : "Ajouter aux favoris",
                 onPressed: widget.onToggleFavorite,
@@ -93,13 +94,13 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00897B).withValues(alpha: 0.15),
+                          color: BarakaColors.sage,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           deal.category,
                           style: const TextStyle(
-                            color: Color(0xFF00897B),
+                            color: BarakaColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -107,7 +108,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                       Text(
                         "${deal.remainingCount} restant(s)",
                         style: TextStyle(
-                          color: deal.remainingCount <= 2 ? Colors.redAccent : Colors.orange.shade800,
+                          color: deal.remainingCount <= 2 ? BarakaColors.terracotta : Colors.orange.shade800,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -137,7 +138,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF00897B),
+                          color: BarakaColors.primary,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -153,7 +154,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.redAccent.shade100,
+                          color: BarakaColors.terracotta,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -199,9 +200,9 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                     return OutlinedButton.icon(
                       onPressed: widget.onToggleFavorite,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: isFav ? Colors.redAccent : Colors.black87,
+                        foregroundColor: isFav ? BarakaColors.terracotta : BarakaColors.textPrimary,
                         side: BorderSide(
-                          color: isFav ? Colors.redAccent : Colors.grey.shade400,
+                          color: isFav ? BarakaColors.terracotta : BarakaColors.border,
                           width: 1.5,
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -212,6 +213,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                       icon: Icon(
                         isFav ? Icons.favorite : Icons.favorite_border,
                         size: 20,
+                        color: isFav ? BarakaColors.terracotta : null,
                       ),
                       label: Text(
                         isFav ? "Favori" : "Enregistrer",
@@ -226,7 +228,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
                 child: ElevatedButton(
                   onPressed: (deal.remainingCount <= 0 || _isLoading) ? null : _handleBooking,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00897B),
+                    backgroundColor: BarakaColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

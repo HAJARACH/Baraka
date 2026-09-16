@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../theme/app_theme.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -70,7 +71,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF00897B), width: 3),
+                border: Border.all(color: BarakaColors.primary, width: 3),
                 borderRadius: BorderRadius.circular(16),
               ),
             ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_theme.dart';
+import '../widgets/baraka_logo.dart';
 
 class AuthScreen extends StatefulWidget {
   final String targetRole; // 'client' ou 'merchant'
@@ -39,7 +41,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Compte créé avec succès !"),
-              backgroundColor: Color(0xFF00897B),
+              backgroundColor: BarakaColors.primary,
             ),
           );
           Navigator.pop(context, true);
@@ -58,7 +60,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Erreur : $e"),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: BarakaColors.terracotta,
           ),
         );
       }
@@ -72,13 +74,14 @@ class _AuthScreenState extends State<AuthScreen> {
     final isMerchant = widget.targetRole == 'merchant';
 
     return Scaffold(
+      backgroundColor: BarakaColors.background,
       appBar: AppBar(
         title: Text(
           isMerchant ? "Espace Partenaire" : "Connexion Client",
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        foregroundColor: BarakaColors.textPrimary,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -86,13 +89,26 @@ class _AuthScreenState extends State<AuthScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 8),
+            Center(
+              child: BarakaLogo(
+                size: 85,
+                showTagline: true,
+              ),
+            ),
+            const SizedBox(height: 24),
             Text(
               _isSignUp
                   ? (isMerchant
                       ? "Rejoignez Baraka comme partenaire"
                       : "Créer un compte pour réserver")
                   : "Bon retour !",
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: BarakaColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 20),
             TextField(
@@ -100,6 +116,7 @@ class _AuthScreenState extends State<AuthScreen> {
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
                 labelText: "Email",
+                prefixIcon: const Icon(Icons.email_outlined, color: BarakaColors.primary),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -109,6 +126,7 @@ class _AuthScreenState extends State<AuthScreen> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: "Mot de passe",
+                prefixIcon: const Icon(Icons.lock_outline, color: BarakaColors.primary),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -118,6 +136,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 controller: _businessNameController,
                 decoration: InputDecoration(
                   labelText: "Nom de l'établissement (ex: Riad Jasmine)",
+                  prefixIcon: const Icon(Icons.storefront_outlined, color: BarakaColors.primary),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -126,7 +145,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ElevatedButton(
               onPressed: _isLoading ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00897B),
+                backgroundColor: BarakaColors.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -149,7 +168,10 @@ class _AuthScreenState extends State<AuthScreen> {
                 _isSignUp
                     ? "Déjà inscrit ? Connectez-vous"
                     : "Pas encore de compte ? S'inscrire",
-                style: const TextStyle(color: Color(0xFF00897B)),
+                style: const TextStyle(
+                  color: BarakaColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

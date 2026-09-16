@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/app_theme.dart';
 
 class MerchantDashboardScreen extends StatefulWidget {
   final VoidCallback? onOfferPublished;
@@ -27,6 +28,13 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   final _imageUrlController = TextEditingController();
   String _selectedCategory = 'Food';
   bool _isPublishing = false;
+
+  static const Map<String, String> _categoryImages = {
+    'Food': 'https://images.unsplash.com/photo-1541544741938-0af808871cc0',
+    'Bien-être': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef',
+    'Activités': 'https://images.unsplash.com/photo-1533105079780-92b9be482077',
+    'Shopping': 'https://images.unsplash.com/photo-1472851294608-062f824d29cc',
+  };
 
   String? _businessName;
   bool _loadingProfile = true;
@@ -116,10 +124,10 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         _foundBooking!['status'] = 'utilise';
       });
 
-      _showMessage("Pass validé et encaissé avec succès pour : $dealTitle !", const Color(0xFF00897B));
+      _showMessage("Pass validé et encaissé avec succès pour : $dealTitle !", BarakaColors.primary);
       _codeController.clear();
     } catch (e) {
-      _showMessage("Erreur de validation : $e", Colors.redAccent);
+      _showMessage("Erreur de validation : $e", BarakaColors.terracotta);
     }
   }
 
@@ -128,35 +136,34 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
     final title = _titleController.text.trim();
     final orig = double.tryParse(_originalPriceController.text.trim());
     final disc = double.tryParse(_discountedPriceController.text.trim());
-    final stock = int.tryParse(_stockController.text.trim());
-    final loc = _locationController.text.trim().isEmpty
-        ? 'Marrakech'
-        : _locationController.text.trim();
-    final image = _imageUrlController.text.trim().isEmpty
-        ? 'https://images.unsplash.com/photo-1541544741938-0af808871cc0'
-        : _imageUrlController.text.trim();
+    final stock = int.tryParse(_stockController.text.trim()) ?? 5;
+    final location = _locationController.text.trim();
+    final img = _imageUrlController.text.trim();
 
-    if (title.isEmpty || orig == null || disc == null || stock == null) {
-      _showMessage("Merci de remplir tous les champs obligatoires.", Colors.redAccent);
+    if (title.isEmpty || orig == null || disc == null) {
+      _showMessage("Veuillez renseigner le titre et les prix.", Colors.orange);
       return;
     }
 
     setState(() => _isPublishing = true);
+    final user = supabase.auth.currentUser;
 
     try {
-      final user = supabase.auth.currentUser;
-      final bName = _businessName ?? 'Établissement Partenaire';
+      final discountPct = (((orig - disc) / orig) * 100).round();
+      final defaultImg = _categoryImages[_selectedCategory] ??
+          'https://images.unsplash.com/photo-1541544741938-0af808871cc0';
 
       await supabase.from('deals').insert({
-        'business_name': bName,
         'title': title,
+        'business_name': _businessName ?? 'Établissement Partenaire',
+        'location': location.isNotEmpty ? location : 'Marrakech',
+        'latitude': 31.6295,
+        'longitude': -7.9811,
         'original_price': orig,
         'discounted_price': disc,
+        'discount_percentage': discountPct,
+        'image_url': img.isNotEmpty ? img : defaultImg,
         'category': _selectedCategory,
-        'image_url': image,
-        'location': loc,
-        'latitude': 31.6346,
-        'longitude': -8.0125,
         'remaining_count': stock,
         'expires_at':
             DateTime.now().add(const Duration(hours: 4)).toIso8601String(),
@@ -171,11 +178,11 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
       _stockController.text = "5";
       _imageUrlController.clear();
 
-      _showMessage("Offre flash publiée avec succès ! (Valable 4h)", const Color(0xFF00897B));
+      _showMessage("Offre flash publiée avec succès ! (Valable 4h)", BarakaColors.primary);
       if (widget.onOfferPublished != null) widget.onOfferPublished!();
       setState(() {});
     } catch (e) {
-      _showMessage("Erreur lors de la publication : $e", Colors.redAccent);
+      _showMessage("Erreur lors de la publication : $e", BarakaColors.terracotta);
     } finally {
       if (mounted) setState(() => _isPublishing = false);
     }
@@ -201,10 +208,10 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   Future<void> _deleteMyDeal(String dealId) async {
     try {
       await supabase.from('deals').delete().eq('id', dealId);
-      _showMessage("Offre supprimée avec succès.", const Color(0xFF00897B));
+      _showMessage("Offre supprimée avec succès.", BarakaColors.primary);
       setState(() {});
     } catch (e) {
-      _showMessage("Erreur : $e", Colors.redAccent);
+      _showMessage("Erreur : $e", BarakaColors.terracotta);
     }
   }
 
@@ -234,17 +241,17 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8F9FA),
+        backgroundColor: BarakaColors.background,
         appBar: AppBar(
           title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2F1),
+                  color: BarakaColors.sage,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.storefront, color: Color(0xFF00897B)),
+                child: const Icon(Icons.storefront, color: BarakaColors.primary),
               ),
               const SizedBox(width: 10),
               Column(
@@ -256,14 +263,14 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                   ),
                   Text(
                     _loadingProfile ? "Chargement..." : bName,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: const TextStyle(fontSize: 11, color: BarakaColors.textSecondary),
                   ),
                 ],
               ),
             ],
           ),
           backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          foregroundColor: BarakaColors.textPrimary,
           elevation: 0,
           actions: [
             IconButton(
@@ -272,14 +279,15 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
               onPressed: () => setState(() {}),
             ),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.redAccent),
+              icon: const Icon(Icons.logout, color: BarakaColors.terracotta),
               tooltip: "Déconnexion",
               onPressed: () => supabase.auth.signOut(),
             ),
           ],
           bottom: const TabBar(
-            labelColor: Color(0xFF00897B),
-            indicatorColor: Color(0xFF00897B),
+            labelColor: BarakaColors.primary,
+            indicatorColor: BarakaColors.primary,
+            indicatorWeight: 3,
             isScrollable: false,
             tabs: [
               Tab(
@@ -339,7 +347,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.check_circle_outline, color: Color(0xFF00897B)),
+                    Icon(Icons.check_circle_outline, color: BarakaColors.primary),
                     SizedBox(width: 8),
                     Text(
                       "Validation du Pass Client",
@@ -371,13 +379,13 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                           counterText: "",
                           hintText: "123456",
                           prefixIcon: const Icon(Icons.pin,
-                              color: Color(0xFF00897B)),
+                              color: BarakaColors.primary),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12)),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                                color: Color(0xFF00897B), width: 2),
+                                color: BarakaColors.primary, width: 2),
                           ),
                         ),
                         onSubmitted: (_) => _searchPass(),
@@ -387,7 +395,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                     ElevatedButton(
                       onPressed: _isValidating ? null : _searchPass,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00897B),
+                        backgroundColor: BarakaColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 16),
@@ -420,7 +428,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isAlreadyUsed ? Colors.orange : const Color(0xFF00897B),
+                  color: isAlreadyUsed ? BarakaColors.terracotta : BarakaColors.primary,
                   width: 2,
                 ),
               ),
@@ -435,16 +443,16 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: isAlreadyUsed
-                              ? Colors.orange.shade50
-                              : const Color(0xFFE0F2F1),
+                              ? BarakaColors.terracottaLight
+                              : BarakaColors.sage,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           isAlreadyUsed ? "PASS DÉJÀ UTILISÉ" : "PASS VALIDE",
                           style: TextStyle(
                             color: isAlreadyUsed
-                                ? Colors.orange.shade800
-                                : const Color(0xFF00897B),
+                                ? BarakaColors.terracotta
+                                : BarakaColors.primary,
                             fontWeight: FontWeight.w900,
                             fontSize: 12,
                           ),
@@ -482,7 +490,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF00897B),
+                          color: BarakaColors.primary,
                         ),
                       ),
                     ],
@@ -501,7 +509,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                             fontWeight: FontWeight.bold, fontSize: 15),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00897B),
+                        backgroundColor: BarakaColors.primary,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -529,19 +537,19 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFE0F2F1),
+              color: BarakaColors.sage,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.bolt, color: Color(0xFF00897B), size: 28),
-                const SizedBox(width: 10),
+                Icon(Icons.bolt, color: BarakaColors.primary, size: 28),
+                SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     "Votre offre sera immédiatement visible par les clients de Marrakech pendant 4 heures.",
                     style: TextStyle(
                         fontSize: 13,
-                        color: Colors.teal.shade900,
+                        color: BarakaColors.primaryDark,
                         fontWeight: FontWeight.w500),
                   ),
                 ),
@@ -661,7 +669,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00897B),
+                backgroundColor: BarakaColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

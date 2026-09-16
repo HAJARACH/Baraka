@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/deal.dart';
+import '../theme/app_theme.dart';
 
 class PassScreen extends StatelessWidget {
   final String dealId;
@@ -57,7 +58,7 @@ class PassScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF00897B),
+      backgroundColor: BarakaColors.primary,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -142,7 +143,7 @@ class PassScreen extends StatelessWidget {
                         size: 190.0,
                         eyeStyle: const QrEyeStyle(
                           eyeShape: QrEyeShape.square,
-                          color: Color(0xFF00897B),
+                          color: BarakaColors.primary,
                         ),
                         dataModuleStyle: const QrDataModuleStyle(
                           dataModuleShape: QrDataModuleShape.square,
@@ -166,7 +167,7 @@ class PassScreen extends StatelessWidget {
                           const SnackBar(
                             content: Text("Code copié dans le presse-papiers !"),
                             duration: Duration(seconds: 2),
-                            backgroundColor: Color(0xFF00897B),
+                            backgroundColor: BarakaColors.primary,
                           ),
                         );
                       },
@@ -175,11 +176,10 @@ class PassScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00897B).withValues(alpha: 0.1),
+                          color: BarakaColors.sageLight,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: const Color(0xFF00897B)
-                                  .withValues(alpha: 0.3)),
+                              color: BarakaColors.sage),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -190,12 +190,12 @@ class PassScreen extends StatelessWidget {
                                 fontSize: 28,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 5,
-                                color: Color(0xFF00897B),
+                                color: BarakaColors.terracotta,
                               ),
                             ),
                             const SizedBox(width: 8),
                             const Icon(Icons.copy,
-                                size: 18, color: Color(0xFF00897B)),
+                                size: 18, color: BarakaColors.terracotta),
                           ],
                         ),
                       ),
@@ -216,7 +216,7 @@ class PassScreen extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF00897B),
+                            color: BarakaColors.primary,
                           ),
                         ),
                       ],

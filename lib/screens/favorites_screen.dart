@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/deal.dart';
 import '../services/favorites_service.dart';
+import '../theme/app_theme.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final double userLat;
@@ -117,32 +118,32 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 Container(
                   padding: const EdgeInsets.all(22),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFFFEBEE),
+                    color: BarakaColors.terracottaLight,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.favorite_border,
                     size: 60,
-                    color: Colors.redAccent,
+                    color: BarakaColors.terracotta,
                   ),
                 ),
                 const SizedBox(height: 20),
                 const Text(
                   "Connectez-vous pour vos favoris",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: BarakaColors.textPrimary),
                 ),
                 const SizedBox(height: 10),
                 const Text(
                   "Enregistrez tous vos coups de cœur sans forcément les bloquer pour les retrouver en un coup d'œil à tout moment.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, height: 1.4),
+                  style: TextStyle(color: BarakaColors.textSecondary, height: 1.4),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
                   onPressed: () => widget.onRequireAuth(() => _refresh()),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00897B),
+                    backgroundColor: BarakaColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -166,11 +167,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: BarakaColors.background,
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.favorite, color: Colors.redAccent),
+            Icon(Icons.favorite, color: BarakaColors.terracotta),
             SizedBox(width: 8),
             Text(
               "Mes Favoris",
@@ -179,7 +180,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ],
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        foregroundColor: BarakaColors.textPrimary,
         elevation: 0,
         actions: [
           IconButton(
@@ -194,7 +195,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF00897B)),
+              child: CircularProgressIndicator(color: BarakaColors.primary),
             );
           }
 
@@ -240,7 +241,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     ElevatedButton.icon(
                       onPressed: widget.onGoToFeed,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00897B),
+                        backgroundColor: BarakaColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 22,
@@ -391,7 +392,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00897B),
+                      color: BarakaColors.terracotta,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -415,7 +416,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                     ),
                     decoration: BoxDecoration(
                       color: isExpired
-                          ? Colors.redAccent
+                          ? BarakaColors.terracotta
                           : Colors.black.withValues(alpha: 0.75),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -440,7 +441,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                     ),
                   ),
                 ),
-                // Bouton retirer des favoris (cœur rouge rempli)
+                // Bouton retirer des favoris (cœur terracotta rempli)
                 Positioned(
                   top: 8,
                   right: 8,
@@ -455,7 +456,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                         padding: EdgeInsets.all(7),
                         child: Icon(
                           Icons.favorite,
-                          color: Colors.redAccent,
+                          color: BarakaColors.terracotta,
                           size: 20,
                         ),
                       ),
@@ -485,7 +486,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF00897B),
+                          color: BarakaColors.primary,
                         ),
                       ),
                     ],
@@ -509,7 +510,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFF00897B),
+                              color: BarakaColors.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -527,7 +528,7 @@ class _FavoriteDealCardState extends State<_FavoriteDealCard> {
                             ? widget.onBook
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
+                          backgroundColor: BarakaColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
