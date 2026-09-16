@@ -7,8 +7,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/admin_screen.dart';
+import 'screens/favorites_screen.dart';
 import 'screens/merchant_dashboard_screen.dart';
 import 'screens/my_passes_screen.dart';
+import 'services/favorites_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -121,10 +123,12 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
   @override
   void initState() {
     super.initState();
+    FavoritesService.instance.init();
     _initGps();
     _fetchUserRole();
     _authSub = supabase.auth.onAuthStateChange.listen((_) {
       _fetchUserRole();
+      FavoritesService.instance.loadFavorites();
     });
   }
 
@@ -205,11 +209,122 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
           onAuthSuccess: () {
             Navigator.pop(context);
             _fetchUserRole();
+            FavoritesService.instance.loadFavorites();
             if (onSuccess != null) onSuccess();
           },
         ),
       ),
     );
+  }
+
+  void _toggleFavoriteWithAuth(String dealId) {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      _openAuthModal(
+        onSuccess: () async {
+          final added = await FavoritesService.instance.toggleFavorite(dealId);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  added ? "Ajouté aux favoris ! ❤️" : "Retiré des favoris",
+                ),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+      );
+    } else {
+      FavoritesService.instance.toggleFavorite(dealId).then((added) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                added ? "Ajouté aux favoris ! ❤️" : "Retiré des favoris",
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _executeBookingFromDeal(DealItem deal) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      _openAuthModal(onSuccess: () => _executeBookingFromDeal(deal));
+      return;
+    }
+
+    final code = (100000 + math.Random().nextInt(900000)).toString();
+
+    try {
+      // 1. Décrémenter le compteur du deal
+      await supabase
+          .from('deals')
+          .update({'remaining_count': deal.remainingCount - 1})
+          .eq('id', deal.id);
+
+      // 2. Insérer dans bookings
+      await supabase.from('bookings').insert({
+        'deal_id': deal.id,
+        'pass_code': code,
+        'status': 'reserve',
+      });
+
+      // 3. Sauvegarder le pass_code localement pour MyPassesScreen
+      final prefs = await SharedPreferences.getInstance();
+      final existingJson = prefs.getString('my_pass_codes_${user.id}') ?? '[]';
+      final List<dynamic> existing = jsonDecode(existingJson);
+      existing.add(code);
+      await prefs.setString('my_pass_codes_${user.id}', jsonEncode(existing));
+
+      // 4. Insérer dans passes (optionnel)
+      try {
+        await supabase.from('passes').insert({
+          'deal_id': deal.id,
+          'user_id': user.id,
+          'code': code,
+          'status': 'active',
+        });
+      } catch (_) {}
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PassResultPage(
+            deal: deal,
+            code: code,
+            onGoToMyPasses: () {
+              Navigator.pop(context);
+              setState(() {
+                _passesRefreshKey++;
+                _currentIndex = 2;
+              });
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      try {
+        await supabase
+            .from('deals')
+            .update({'remaining_count': deal.remainingCount})
+            .eq('id', deal.id);
+      } catch (_) {}
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Échec du blocage : $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -225,10 +340,34 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.confirmation_number_outlined,
-                      color: Color(0xFF00897B)),
-                  tooltip: "Mes Pass Réservés",
+                  icon: ValueListenableBuilder<Set<String>>(
+                    valueListenable:
+                        FavoritesService.instance.favoritesNotifier,
+                    builder: (context, favs, _) {
+                      const icon = Icon(
+                        Icons.favorite_outline,
+                        color: Colors.redAccent,
+                      );
+                      if (favs.isNotEmpty) {
+                        return Badge(
+                          label: Text('${favs.length}'),
+                          backgroundColor: Colors.redAccent,
+                          child: icon,
+                        );
+                      }
+                      return icon;
+                    },
+                  ),
+                  tooltip: "Mes Favoris",
                   onPressed: () => setState(() => _currentIndex = 1),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.confirmation_number_outlined,
+                    color: Color(0xFF00897B),
+                  ),
+                  tooltip: "Mes Pass Réservés",
+                  onPressed: () => setState(() => _currentIndex = 2),
                 ),
                 if (user == null)
                   TextButton.icon(
@@ -247,7 +386,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                     Container(
                       margin: const EdgeInsets.only(right: 6),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: _userRole == 'admin'
                             ? Colors.purple.shade50
@@ -283,8 +424,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                     child: Center(
                       child: Text(
                         user.email?.split('@').first ?? 'Connecté',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),
@@ -293,6 +436,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                     tooltip: "Déconnexion",
                     onPressed: () async {
                       await supabase.auth.signOut();
+                      FavoritesService.instance.clear();
                       setState(() {
                         _userRole = null;
                         _currentIndex = 0;
@@ -313,6 +457,35 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
             icon: Icon(Icons.local_offer_outlined),
             selectedIcon: Icon(Icons.local_offer),
             label: 'Bons plans',
+          ),
+          NavigationDestination(
+            icon: ValueListenableBuilder<Set<String>>(
+              valueListenable: FavoritesService.instance.favoritesNotifier,
+              builder: (context, favs, _) {
+                if (favs.isEmpty) {
+                  return const Icon(Icons.favorite_outline);
+                }
+                return Badge(
+                  label: Text('${favs.length}'),
+                  backgroundColor: Colors.redAccent,
+                  child: const Icon(Icons.favorite_outline),
+                );
+              },
+            ),
+            selectedIcon: ValueListenableBuilder<Set<String>>(
+              valueListenable: FavoritesService.instance.favoritesNotifier,
+              builder: (context, favs, _) {
+                if (favs.isEmpty) {
+                  return const Icon(Icons.favorite);
+                }
+                return Badge(
+                  label: Text('${favs.length}'),
+                  backgroundColor: Colors.redAccent,
+                  child: const Icon(Icons.favorite),
+                );
+              },
+            ),
+            label: 'Favoris',
           ),
           const NavigationDestination(
             icon: Icon(Icons.confirmation_number_outlined),
@@ -345,13 +518,66 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
         onRequireAuth: (action) => _openAuthModal(onSuccess: action),
         onOpenMyPasses: () => setState(() {
           _passesRefreshKey++;
-          _currentIndex = 1;
+          _currentIndex = 2;
         }),
       );
     }
 
-    // Onglet 1 : Mes Pass (Réservations sauvegardées)
+    // Onglet 1 : Favoris (Sauvegardés sans forcément bloquer)
     if (_currentIndex == 1) {
+      return FavoritesScreen(
+        userLat: _userLat,
+        userLng: _userLng,
+        onGoToFeed: () => setState(() => _currentIndex = 0),
+        onRequireAuth: (action) => _openAuthModal(onSuccess: action),
+        onBookDeal: (deal) {
+          final dealItem = DealItem(
+            id: deal.id,
+            title: deal.title,
+            businessName: deal.businessName,
+            originalPrice: deal.originalPrice,
+            discountedPrice: deal.discountedPrice,
+            remainingCount: deal.remainingCount,
+            location: deal.location,
+            latitude: deal.latitude,
+            longitude: deal.longitude,
+            imageUrl: deal.imageUrl,
+            expiresAt: deal.expiresAt,
+          );
+          _executeBookingFromDeal(dealItem);
+        },
+        onOpenDealDetail: (deal) {
+          final dealItem = DealItem(
+            id: deal.id,
+            title: deal.title,
+            businessName: deal.businessName,
+            originalPrice: deal.originalPrice,
+            discountedPrice: deal.discountedPrice,
+            remainingCount: deal.remainingCount,
+            location: deal.location,
+            latitude: deal.latitude,
+            longitude: deal.longitude,
+            imageUrl: deal.imageUrl,
+            expiresAt: deal.expiresAt,
+          );
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DealDetailPage(
+                deal: dealItem,
+                userLat: _userLat,
+                userLng: _userLng,
+                onBook: () => _executeBookingFromDeal(dealItem),
+                onToggleFavorite: () => _toggleFavoriteWithAuth(dealItem.id),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // Onglet 2 : Mes Pass (Réservations sauvegardées)
+    if (_currentIndex == 2) {
       return MyPassesScreen(
         key: ValueKey(_passesRefreshKey),
         onGoToFeed: () => setState(() => _currentIndex = 0),
@@ -359,7 +585,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       );
     }
 
-    // Onglet 2 : Espace Pro ou Administration
+    // Onglet 3 : Espace Pro ou Administration
     if (user == null) {
       return ProLoginGuard(onLoginRequested: () => _openAuthModal());
     }
@@ -388,9 +614,10 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
     } else {
       return ClientGuardView(
         onGoToFeed: () => setState(() => _currentIndex = 0),
-        onGoToPasses: () => setState(() => _currentIndex = 1),
+        onGoToPasses: () => setState(() => _currentIndex = 2),
         onLogout: () async {
           await supabase.auth.signOut();
+          FavoritesService.instance.clear();
           setState(() {
             _userRole = null;
             _currentIndex = 0;
@@ -638,6 +865,38 @@ class _FeedViewState extends State<FeedView> {
     }
   }
 
+  void _handleFavoriteToggle(DealItem deal) {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      widget.onRequireAuth(() async {
+        final added = await FavoritesService.instance.toggleFavorite(deal.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                added ? "Ajouté aux favoris ! ❤️" : "Retiré des favoris",
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      });
+    } else {
+      FavoritesService.instance.toggleFavorite(deal.id).then((added) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                added ? "Ajouté aux favoris ! ❤️" : "Retiré des favoris",
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      });
+    }
+  }
+
   Future<void> _executeBooking(DealItem deal) async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
@@ -702,6 +961,7 @@ class _FeedViewState extends State<FeedView> {
             .update({'remaining_count': deal.remainingCount})
             .eq('id', deal.id);
       } catch (_) {}
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Échec du blocage : $e"),
@@ -788,11 +1048,13 @@ class _FeedViewState extends State<FeedView> {
                         userLat: widget.userLat,
                         userLng: widget.userLng,
                         onBook: () => _handleBookRequest(deal),
+                        onToggleFavorite: () => _handleFavoriteToggle(deal),
                       ),
                     ),
                   );
                 },
                 onBook: () => _handleBookRequest(deal),
+                onToggleFavorite: () => _handleFavoriteToggle(deal),
               );
             },
           ),
@@ -811,6 +1073,7 @@ class DealCardWidget extends StatefulWidget {
   final double userLng;
   final VoidCallback onTap;
   final VoidCallback onBook;
+  final VoidCallback onToggleFavorite;
 
   const DealCardWidget({
     super.key,
@@ -819,6 +1082,7 @@ class DealCardWidget extends StatefulWidget {
     required this.userLng,
     required this.onTap,
     required this.onBook,
+    required this.onToggleFavorite,
   });
 
   @override
@@ -918,7 +1182,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                 ),
                 Positioned(
                   top: 12,
-                  right: 12,
+                  right: 52,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -935,6 +1199,34 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: ValueListenableBuilder<Set<String>>(
+                    valueListenable:
+                        FavoritesService.instance.favoritesNotifier,
+                    builder: (context, favs, _) {
+                      final isFav = favs.contains(widget.deal.id);
+                      return Material(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: widget.onToggleFavorite,
+                          child: Padding(
+                            padding: const EdgeInsets.all(7),
+                            child: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              color: isFav ? Colors.redAccent : Colors.black87,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -1027,6 +1319,7 @@ class DealDetailPage extends StatelessWidget {
   final double userLat;
   final double userLng;
   final VoidCallback onBook;
+  final VoidCallback onToggleFavorite;
 
   const DealDetailPage({
     super.key,
@@ -1034,12 +1327,32 @@ class DealDetailPage extends StatelessWidget {
     required this.userLat,
     required this.userLng,
     required this.onBook,
+    required this.onToggleFavorite,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(deal.businessName)),
+      appBar: AppBar(
+        title: Text(deal.businessName),
+        actions: [
+          ValueListenableBuilder<Set<String>>(
+            valueListenable: FavoritesService.instance.favoritesNotifier,
+            builder: (context, favs, _) {
+              final isFav = favs.contains(deal.id);
+              return IconButton(
+                icon: Icon(
+                  isFav ? Icons.favorite : Icons.favorite_border,
+                  color: isFav ? Colors.redAccent : Colors.black87,
+                ),
+                tooltip: isFav ? "Retirer des favoris" : "Ajouter aux favoris",
+                onPressed: onToggleFavorite,
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1141,23 +1454,71 @@ class DealDetailPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        onBook();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00897B),
-                        foregroundColor: Colors.white,
+                  Row(
+                    children: [
+                      ValueListenableBuilder<Set<String>>(
+                        valueListenable:
+                            FavoritesService.instance.favoritesNotifier,
+                        builder: (context, favs, _) {
+                          final isFav = favs.contains(deal.id);
+                          return OutlinedButton.icon(
+                            onPressed: onToggleFavorite,
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor:
+                                  isFav ? Colors.redAccent : Colors.black87,
+                              side: BorderSide(
+                                color: isFav
+                                    ? Colors.redAccent
+                                    : Colors.grey.shade400,
+                                width: 1.5,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              size: 20,
+                            ),
+                            label: Text(
+                              isFav ? "Favori" : "Enregistrer",
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          );
+                        },
                       ),
-                      child: const Text(
-                        "Bloquer mon pass maintenant",
-                        style: TextStyle(fontSize: 16),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: deal.remainingCount > 0
+                              ? () {
+                                  Navigator.pop(context);
+                                  onBook();
+                                }
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF00897B),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            "Bloquer ce bon plan",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),

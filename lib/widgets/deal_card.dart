@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/deal.dart';
+import '../services/favorites_service.dart';
 
 class DealCard extends StatefulWidget {
   final Deal deal;
   final VoidCallback onTap;
   final double userLat;
   final double userLng;
+  final VoidCallback? onToggleFavorite;
 
   const DealCard({
     super.key,
@@ -15,6 +17,7 @@ class DealCard extends StatefulWidget {
     required this.onTap,
     required this.userLat,
     required this.userLng,
+    this.onToggleFavorite,
   });
 
   @override
@@ -95,7 +98,7 @@ class _DealCardState extends State<DealCard> {
                   height: 170,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (context, error, stackTrace) => Container(
                     height: 170,
                     color: Colors.grey.shade200,
                     child: const Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
@@ -122,7 +125,7 @@ class _DealCardState extends State<DealCard> {
                 ),
                 Positioned(
                   top: 12,
-                  right: 12,
+                  right: 52,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
@@ -144,6 +147,33 @@ class _DealCardState extends State<DealCard> {
                         ),
                       ],
                     ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: ValueListenableBuilder<Set<String>>(
+                    valueListenable: FavoritesService.instance.favoritesNotifier,
+                    builder: (context, favs, _) {
+                      final isFav = favs.contains(widget.deal.id);
+                      return Material(
+                        color: Colors.white.withValues(alpha: 0.92),
+                        shape: const CircleBorder(),
+                        elevation: 2,
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: widget.onToggleFavorite,
+                          child: Padding(
+                            padding: const EdgeInsets.all(7),
+                            child: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              color: isFav ? Colors.redAccent : Colors.black87,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

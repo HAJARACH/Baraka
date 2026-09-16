@@ -1,15 +1,18 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/deal.dart';
+import '../services/favorites_service.dart';
 
 class DealDetailScreen extends StatefulWidget {
   final Deal deal;
   final Function(String passCode) onBookConfirmed;
+  final VoidCallback? onToggleFavorite;
 
   const DealDetailScreen({
     super.key,
     required this.deal,
     required this.onBookConfirmed,
+    this.onToggleFavorite,
   });
 
   @override
@@ -46,6 +49,23 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0,
+        actions: [
+          ValueListenableBuilder<Set<String>>(
+            valueListenable: FavoritesService.instance.favoritesNotifier,
+            builder: (context, favs, _) {
+              final isFav = favs.contains(deal.id);
+              return IconButton(
+                icon: Icon(
+                  isFav ? Icons.favorite : Icons.favorite_border,
+                  color: isFav ? Colors.redAccent : Colors.black87,
+                ),
+                tooltip: isFav ? "Retirer des favoris" : "Ajouter aux favoris",
+                onPressed: widget.onToggleFavorite,
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -56,7 +76,7 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
               height: 240,
               width: double.infinity,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (context, error, stackTrace) => Container(
                 height: 240,
                 color: Colors.grey.shade300,
                 child: const Icon(Icons.image_not_supported, size: 60),
@@ -169,24 +189,61 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: (deal.remainingCount <= 0 || _isLoading) ? null : _handleBooking,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00897B),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                : const Text(
-                    "Bloquer ce bon plan",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          child: Row(
+            children: [
+              if (widget.onToggleFavorite != null) ...[
+                ValueListenableBuilder<Set<String>>(
+                  valueListenable: FavoritesService.instance.favoritesNotifier,
+                  builder: (context, favs, _) {
+                    final isFav = favs.contains(deal.id);
+                    return OutlinedButton.icon(
+                      onPressed: widget.onToggleFavorite,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isFav ? Colors.redAccent : Colors.black87,
+                        side: BorderSide(
+                          color: isFav ? Colors.redAccent : Colors.grey.shade400,
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        size: 20,
+                      ),
+                      label: Text(
+                        isFav ? "Favori" : "Enregistrer",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: (deal.remainingCount <= 0 || _isLoading) ? null : _handleBooking,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF00897B),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text(
+                          "Bloquer ce bon plan",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
