@@ -14,7 +14,6 @@ import 'screens/splash_screen.dart';
 import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/baraka_logo.dart';
-import 'widgets/zellige_background.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -532,10 +531,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               ],
             )
           : null,
-      body: ZelligeBackground(
-        patternOpacity: 0.65,
-        child: _buildCurrentBody(user),
-      ),
+      body: _buildCurrentBody(user),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),

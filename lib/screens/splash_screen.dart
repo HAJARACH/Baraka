@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import '../widgets/zellige_background.dart';
 import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -126,23 +125,37 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: BarakaColors.background,
       body: GestureDetector(
         onTap: _navigateToHome, // Permet de passer le splash screen en touchant l'écran
-        child: ZelligeBackground(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFFFFDF9),
+                BarakaColors.background,
+                Color(0xFFF3ECE1),
+              ],
+            ),
+          ),
           child: Stack(
             children: [
-              // Halo central doux pour magnifier le logo
-              Center(
+              // Halos décoratifs subtils en arrière-plan
+              Positioned(
+                top: MediaQuery.of(context).size.height * 0.25,
+                left: MediaQuery.of(context).size.width * 0.5 - 150,
                 child: Container(
-                  width: 340,
-                  height: 340,
+                  width: 300,
+                  height: 300,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        BarakaColors.background.withValues(alpha: 0.85),
-                        BarakaColors.background.withValues(alpha: 0.0),
+                        BarakaColors.primary.withValues(alpha: 0.05),
+                        BarakaColors.primary.withValues(alpha: 0.0),
                       ],
                     ),
                   ),
