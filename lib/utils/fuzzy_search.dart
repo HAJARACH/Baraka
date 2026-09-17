@@ -223,11 +223,14 @@ class FuzzySearch {
   static bool wordMatches(String queryWord, String targetWord) {
     if (queryWord == targetWord) return true;
 
-    // Correspondance par préfixe (ex: "crois" pour "croissant", "boulan" pour "boulangerie")
-    if (targetWord.startsWith(queryWord) && queryWord.length >= 3) return true;
+    // Correspondance par préfixe (ex: "p" pour "panier", "pa" pour "pain", "crois" pour "croissant")
+    if (targetWord.startsWith(queryWord)) return true;
 
-    // Correspondance par sous-chaîne directe
-    if (targetWord.contains(queryWord) && queryWord.length >= 3) return true;
+    // Correspondance par sous-chaîne directe (ex: "choc" dans "chocolat")
+    if (targetWord.contains(queryWord)) return true;
+
+    // Si le mot recherché est très court (1 ou 2 lettres), pas de faute tolérée
+    if (queryWord.length <= 2) return false;
 
     final qLen = queryWord.length;
     final tLen = targetWord.length;
@@ -274,14 +277,24 @@ class FuzzySearch {
     required String category,
     required String query,
   }) {
-    if (query.trim().isEmpty) return true;
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return true;
 
-    final queryTokens = tokenize(query);
+    // 1. RECHERCHE DIRECTE SOUS-CHAÎNE (100% infaillible pour toute recherche exacte ou partielle)
+    final rawCombined = '$title $businessName $location $category'.toLowerCase();
+    final queryLower = trimmed.toLowerCase();
+    if (rawCombined.contains(queryLower)) return true;
+
+    // 2. RECHERCHE NORMALISÉE SANS ACCENTS (insensible aux accents : "gueliz" -> "Guéliz", "medina" -> "Médina")
+    final normFull = normalize('$title $businessName $location $category');
+    final normQuery = normalize(trimmed);
+    if (normQuery.isNotEmpty && normFull.contains(normQuery)) return true;
+
+    // 3. RECHERCHE PAR MOTS-CLÉS INTELLIGENTE (Tolérance aux fautes d'orthographe, inversions, translittérations)
+    final queryTokens = tokenize(trimmed);
     if (queryTokens.isEmpty) return true;
 
-    // Construire le dictionnaire des mots cibles du bon plan
     final targetWords = <String>{};
-
     void addWords(String text) {
       final norm = normalize(text);
       if (norm.isNotEmpty) {
@@ -294,25 +307,25 @@ class FuzzySearch {
     addWords(location);
     addWords(category);
 
-    // Mots-clés sémantiques de la catégorie
-    final catKeywords = categoryKeywords[category] ?? [];
-    for (final kw in catKeywords) {
-      addWords(kw);
+    final normCat = normalize(category);
+    for (final entry in categoryKeywords.entries) {
+      if (normalize(entry.key) == normCat || normCat.contains(normalize(entry.key))) {
+        for (final kw in entry.value) {
+          addWords(kw);
+        }
+      }
     }
 
     final targetList = targetWords.toList();
 
-    // Chaque mot de la requête doit matcher au moins un mot cible du deal
     for (final qToken in queryTokens) {
       bool tokenMatched = false;
-
       for (final tWord in targetList) {
         if (wordMatches(qToken, tWord)) {
           tokenMatched = true;
           break;
         }
       }
-
       if (!tokenMatched) {
         return false;
       }
