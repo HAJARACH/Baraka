@@ -74,7 +74,7 @@ class BarakaLogo extends StatelessWidget {
   }
 }
 
-/// Header de marque élégant pour l'AppBar
+/// Header de marque moderne pour l'AppBar avec indicateur de localisation
 class BarakaAppBarTitle extends StatelessWidget {
   const BarakaAppBarTitle({super.key});
 
@@ -108,24 +108,47 @@ class BarakaAppBarTitle extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(
-          child: RichText(
-            overflow: TextOverflow.ellipsis,
-            text: const TextSpan(
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.4,
-                color: BarakaColors.primary,
-              ),
-              children: [
-                TextSpan(text: "Barak"),
-                TextSpan(
-                  text: "a",
-                  style: TextStyle(color: BarakaColors.terracotta),
-                ),
-              ],
+        RichText(
+          text: const TextSpan(
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.3,
+              color: BarakaColors.primary,
             ),
+            children: [
+              TextSpan(text: "Barak"),
+              TextSpan(
+                text: "a",
+                style: TextStyle(color: BarakaColors.terracotta),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: BarakaColors.sageLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: BarakaColors.primary.withValues(alpha: 0.15),
+            ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.place_rounded, size: 11, color: BarakaColors.primary),
+              SizedBox(width: 3),
+              Text(
+                "Marrakech",
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: BarakaColors.primary,
+                ),
+              ),
+            ],
           ),
         ),
       ],

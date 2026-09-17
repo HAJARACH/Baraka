@@ -151,17 +151,22 @@ class CategoryHubScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Ink(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.95),
+            color: Colors.white.withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: accentColor.withValues(alpha: 0.25),
-              width: 1.5,
+              color: accentColor.withValues(alpha: 0.22),
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
                 color: accentColor.withValues(alpha: 0.08),
-                blurRadius: 18,
+                blurRadius: 20,
                 offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
@@ -169,15 +174,25 @@ class CategoryHubScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Ligne du haut : Icône & Badge
+              // Ligne du haut : Icône & Titre
               Row(
                 children: [
                   Container(
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.12),
+                      gradient: LinearGradient(
+                        colors: [
+                          accentColor.withValues(alpha: 0.16),
+                          accentColor.withValues(alpha: 0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Icon(icon, color: accentColor, size: 28),
                   ),
@@ -190,25 +205,35 @@ class CategoryHubScreen extends StatelessWidget {
                           title,
                           style: const TextStyle(
                             fontSize: 17,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                             color: BarakaColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           subtitle,
                           style: TextStyle(
                             fontSize: 12,
+                            fontWeight: FontWeight.w500,
                             color: BarakaColors.textSecondary.withValues(alpha: 0.85),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    size: 16,
-                    color: accentColor.withValues(alpha: 0.7),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: accentColor,
+                    ),
                   ),
                 ],
               ),
@@ -234,14 +259,17 @@ class CategoryHubScreen extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: badgeColor.withValues(alpha: 0.4),
+                      color: badgeColor.withValues(alpha: 0.45),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.15),
+                      ),
                     ),
                     child: Text(
                       c,
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: accentColor,
                       ),
                     ),

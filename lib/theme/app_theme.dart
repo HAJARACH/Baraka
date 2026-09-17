@@ -27,6 +27,46 @@ class BarakaColors {
   // Accents d'alerte et ocre
   static const Color ochre = Color(0xFFD69E2E); // Ocre marocain
   static const Color discountBadge = Color(0xFFC25E35); // Terracotta pour les remises
+
+  // Dégradés modernes
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF1B4D3E), Color(0xFF286B56)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient terracottaGradient = LinearGradient(
+    colors: [Color(0xFFE05F36), Color(0xFFBF4822)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // Ombres douces modernes (Soft luxury shadows)
+  static List<BoxShadow> get cardShadow => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 16,
+      offset: const Offset(0, 5),
+    ),
+    BoxShadow(
+      color: const Color(0xFF1B4D3E).withValues(alpha: 0.03),
+      blurRadius: 6,
+      offset: const Offset(0, 1),
+    ),
+  ];
+
+  static List<BoxShadow> get floatingShadow => [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: const Color(0xFF1B4D3E).withValues(alpha: 0.05),
+      blurRadius: 10,
+      offset: const Offset(0, 2),
+    ),
+  ];
 }
 
 class BarakaTheme {
@@ -56,10 +96,10 @@ class BarakaTheme {
       ),
       cardTheme: CardThemeData(
         color: BarakaColors.surface,
-        elevation: 1.5,
-        shadowColor: Colors.black.withValues(alpha: 0.06),
+        elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Color(0xFFEFEBE4), width: 1),
         ),
       ),
@@ -70,7 +110,7 @@ class BarakaTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(
             fontSize: 15,
@@ -85,7 +125,7 @@ class BarakaTheme {
           side: const BorderSide(color: BarakaColors.primary, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(
             fontSize: 14,
@@ -95,7 +135,7 @@ class BarakaTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
-        elevation: 4,
+        elevation: 0,
         indicatorColor: BarakaColors.sage,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -121,16 +161,16 @@ class BarakaTheme {
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: BarakaColors.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: BarakaColors.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BarakaColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: BarakaColors.primary, width: 1.8),
         ),
         labelStyle: const TextStyle(color: BarakaColors.textSecondary),
         prefixIconColor: BarakaColors.primary,

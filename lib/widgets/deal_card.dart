@@ -82,178 +82,273 @@ class _DealCardState extends State<DealCard> {
     );
     final isExpired = _timeLeft.inSeconds <= 0;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 3,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: BarakaColors.border.withValues(alpha: 0.7)),
+        boxShadow: BarakaColors.cardShadow,
+      ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: isExpired ? null : widget.onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                Image.network(
-                  widget.deal.imageUrl,
-                  height: 170,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 170,
-                    color: Colors.grey.shade200,
-                    child: const Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: BarakaColors.terracotta,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "-${widget.deal.discountPercentage}%",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isExpired ? null : widget.onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  Image.network(
+                    widget.deal.imageUrl,
+                    height: 175,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 175,
+                      color: BarakaColors.sageLight,
+                      child: const Center(
+                        child: Icon(Icons.image_outlined, size: 44, color: BarakaColors.primaryLight),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 52,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isExpired ? Colors.redAccent : Colors.black.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(20),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.1),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.65),
+                          ],
+                          stops: const [0.0, 0.45, 1.0],
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: BarakaColors.terracottaGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: BarakaColors.terracotta.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.bolt_rounded, size: 13, color: Colors.white),
+                          const SizedBox(width: 2),
+                          Text(
+                            "-${widget.deal.discountPercentage}%",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: ValueListenableBuilder<Set<String>>(
+                      valueListenable: FavoritesService.instance.favoritesNotifier,
+                      builder: (context, favs, _) {
+                        final isFav = favs.contains(widget.deal.id);
+                        return Material(
+                          color: Colors.white.withValues(alpha: 0.94),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: widget.onToggleFavorite,
+                            child: Container(
+                              padding: const EdgeInsets.all(7.5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                color: isFav ? BarakaColors.terracotta : BarakaColors.textPrimary,
+                                size: 19,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isExpired
+                            ? BarakaColors.terracotta.withValues(alpha: 0.9)
+                            : Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.timer_outlined, color: Colors.white.withValues(alpha: 0.95), size: 13),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatTimer(_timeLeft),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11.5,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.near_me_rounded, size: 12, color: Colors.white),
+                          const SizedBox(width: 3),
+                          Text(
+                            "${distanceKm.toStringAsFixed(1)} km",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.deal.businessName.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: BarakaColors.textSecondary.withValues(alpha: 0.85),
+                        letterSpacing: 0.6,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      widget.deal.title,
+                      style: const TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: BarakaColors.textPrimary,
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.timer_outlined, color: Colors.white, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatTimer(_timeLeft),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              "${widget.deal.discountedPrice.toStringAsFixed(0)} MAD",
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                                color: BarakaColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${widget.deal.originalPrice.toStringAsFixed(0)} MAD",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade400,
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: Colors.grey.shade400,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: widget.deal.remainingCount <= 2
+                                ? BarakaColors.terracottaLight
+                                : BarakaColors.sageLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            "${widget.deal.remainingCount} restant${widget.deal.remainingCount > 1 ? 's' : ''}",
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: widget.deal.remainingCount <= 2
+                                  ? BarakaColors.terracottaDark
+                                  : BarakaColors.primaryDark,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: ValueListenableBuilder<Set<String>>(
-                    valueListenable: FavoritesService.instance.favoritesNotifier,
-                    builder: (context, favs, _) {
-                      final isFav = favs.contains(widget.deal.id);
-                      return Material(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: widget.onToggleFavorite,
-                          child: Padding(
-                            padding: const EdgeInsets.all(7),
-                            child: Icon(
-                              isFav ? Icons.favorite : Icons.favorite_border,
-                              color: isFav ? Colors.redAccent : Colors.black87,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        widget.deal.businessName.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey.shade600,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(Icons.near_me_outlined, size: 13, color: BarakaColors.primary),
-                          const SizedBox(width: 3),
-                          Text(
-                            "${distanceKm.toStringAsFixed(1)} km",
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.deal.title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "${widget.deal.discountedPrice.toStringAsFixed(0)} MAD",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: BarakaColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "${widget.deal.originalPrice.toStringAsFixed(0)} MAD",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade400,
-                              decoration: TextDecoration.lineThrough,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        "${widget.deal.remainingCount} restant(s)",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: widget.deal.remainingCount <= 2
-                              ? Colors.redAccent
-                              : Colors.orange.shade800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

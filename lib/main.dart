@@ -558,63 +558,154 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       body: AppBackground(
         child: _buildCurrentBody(user),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.local_offer_outlined),
-            selectedIcon: Icon(Icons.local_offer),
-            label: 'Bons plans',
-          ),
-          NavigationDestination(
-            icon: ValueListenableBuilder<Set<String>>(
-              valueListenable: FavoritesService.instance.favoritesNotifier,
-              builder: (context, favs, _) {
-                if (favs.isEmpty) {
-                  return const Icon(Icons.favorite_outline);
-                }
-                return Badge(
-                  label: Text('${favs.length}'),
-                  backgroundColor: Colors.redAccent,
-                  child: const Icon(Icons.favorite_outline),
-                );
-              },
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.97),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: BarakaColors.border.withValues(alpha: 0.8),
             ),
-            selectedIcon: ValueListenableBuilder<Set<String>>(
-              valueListenable: FavoritesService.instance.favoritesNotifier,
-              builder: (context, favs, _) {
-                if (favs.isEmpty) {
-                  return const Icon(Icons.favorite);
-                }
-                return Badge(
-                  label: Text('${favs.length}'),
-                  backgroundColor: Colors.redAccent,
-                  child: const Icon(Icons.favorite),
-                );
-              },
-            ),
-            label: 'Favoris',
+            boxShadow: BarakaColors.floatingShadow,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.confirmation_number_outlined),
-            selectedIcon: Icon(Icons.confirmation_number),
-            label: 'Mes Pass',
+          child: Row(
+            children: [
+              _buildNavDockItem(
+                index: 0,
+                label: 'Bons plans',
+                icon: Icons.local_offer_outlined,
+                selectedIcon: Icons.local_offer_rounded,
+              ),
+              _buildNavDockFavoritesItem(),
+              _buildNavDockItem(
+                index: 2,
+                label: 'Mes Pass',
+                icon: Icons.confirmation_number_outlined,
+                selectedIcon: Icons.confirmation_number_rounded,
+              ),
+              _buildNavDockItem(
+                index: 3,
+                label: _userRole == 'admin' ? 'Admin' : 'Espace Pro',
+                icon: _userRole == 'admin'
+                    ? Icons.admin_panel_settings_outlined
+                    : Icons.storefront_outlined,
+                selectedIcon: _userRole == 'admin'
+                    ? Icons.admin_panel_settings_rounded
+                    : Icons.storefront_rounded,
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(
-              _userRole == 'admin'
-                  ? Icons.admin_panel_settings_outlined
-                  : Icons.storefront_outlined,
-            ),
-            selectedIcon: Icon(
-              _userRole == 'admin'
-                  ? Icons.admin_panel_settings
-                  : Icons.storefront,
-            ),
-            label: _userRole == 'admin' ? 'Administration' : 'Espace Pro',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavDockItem({
+    required int index,
+    required String label,
+    required IconData icon,
+    required IconData selectedIcon,
+  }) {
+    final isSelected = _currentIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _currentIndex = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? BarakaColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? selectedIcon : icon,
+                size: 21,
+                color: isSelected ? Colors.white : BarakaColors.textSecondary,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? Colors.white : BarakaColors.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavDockFavoritesItem() {
+    final isSelected = _currentIndex == 1;
+    return Expanded(
+      child: ValueListenableBuilder<Set<String>>(
+        valueListenable: FavoritesService.instance.favoritesNotifier,
+        builder: (context, favs, _) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _currentIndex = 1),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? BarakaColors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Badge(
+                    isLabelVisible: favs.isNotEmpty,
+                    label: Text(
+                      '${favs.length}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: BarakaColors.terracotta,
+                    child: Icon(
+                      isSelected
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_outline_rounded,
+                      size: 21,
+                      color: isSelected
+                          ? Colors.white
+                          : BarakaColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Favoris',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : BarakaColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1331,33 +1422,38 @@ class _FeedViewState extends State<FeedView> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(color: BarakaColors.border.withValues(alpha: 0.7)),
+          boxShadow: BarakaColors.cardShadow,
         ),
         child: TextField(
           controller: _searchController,
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
-            hintText: "Rechercher (ex: croisant, tajin, fleurist...)",
+            hintText: "Rechercher (ex: croissant, tajine, fleuriste...)",
             hintStyle: TextStyle(
-              color: BarakaColors.textSecondary.withValues(alpha: 0.8),
+              color: BarakaColors.textSecondary.withValues(alpha: 0.75),
               fontSize: 13,
             ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: BarakaColors.primary,
-              size: 22,
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                width: 34,
+                height: 34,
+                decoration: const BoxDecoration(
+                  color: BarakaColors.sageLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  color: BarakaColors.primary,
+                  size: 18,
+                ),
+              ),
             ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
@@ -1370,9 +1466,11 @@ class _FeedViewState extends State<FeedView> {
                   )
                 : null,
             border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 13,
+              vertical: 14,
             ),
           ),
         ),
@@ -1382,29 +1480,37 @@ class _FeedViewState extends State<FeedView> {
 
   Widget _buildMacroCategorySelector() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(3),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: BarakaColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: BarakaColors.border.withValues(alpha: 0.8),
+                ),
+                boxShadow: BarakaColors.cardShadow,
               ),
               child: Row(
                 children: [
-                  _buildMacroTab('Tous', 'Tout', Icons.auto_awesome_mosaic_rounded),
-                  _buildMacroTab('Alimentaire', 'Alimentaire', Icons.restaurant_rounded),
-                  _buildMacroTab('Services', 'Services', Icons.room_service_rounded),
+                  _buildMacroTab(
+                    'Tous',
+                    'Tout',
+                    Icons.auto_awesome_mosaic_rounded,
+                  ),
+                  _buildMacroTab(
+                    'Alimentaire',
+                    'Alimentaire',
+                    Icons.restaurant_rounded,
+                  ),
+                  _buildMacroTab(
+                    'Services',
+                    'Services',
+                    Icons.room_service_rounded,
+                  ),
                 ],
               ),
             ),
@@ -1414,9 +1520,9 @@ class _FeedViewState extends State<FeedView> {
             message: "Changer d'univers",
             child: Material(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(16),
               child: InkWell(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -1426,14 +1532,17 @@ class _FeedViewState extends State<FeedView> {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(11),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: BarakaColors.border),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: BarakaColors.border.withValues(alpha: 0.8),
+                    ),
+                    boxShadow: BarakaColors.cardShadow,
                   ),
                   child: const Icon(
                     Icons.dashboard_customize_rounded,
-                    size: 20,
+                    size: 19,
                     color: BarakaColors.primary,
                   ),
                 ),
@@ -1456,11 +1565,22 @@ class _FeedViewState extends State<FeedView> {
           });
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? BarakaColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            gradient: isSelected ? BarakaColors.primaryGradient : null,
+            color: isSelected ? null : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: BarakaColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1477,8 +1597,10 @@ class _FeedViewState extends State<FeedView> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                    color: isSelected ? Colors.white : BarakaColors.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected
+                        ? Colors.white
+                        : BarakaColors.textSecondary,
                   ),
                 ),
               ),
@@ -1520,14 +1642,14 @@ class _FeedViewState extends State<FeedView> {
             showCheckmark: false,
             avatar: Icon(
               icon,
-              size: 16,
+              size: 15,
               color: isSelected ? Colors.white : BarakaColors.primary,
             ),
             label: Text(
               displayLabel,
               style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                fontSize: 12,
                 color: isSelected ? Colors.white : BarakaColors.textPrimary,
               ),
             ),
@@ -1535,10 +1657,10 @@ class _FeedViewState extends State<FeedView> {
             backgroundColor: Colors.white,
             side: BorderSide(
               color: isSelected ? BarakaColors.primary : BarakaColors.border,
-              width: 1.2,
+              width: 1,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
             ),
             onSelected: (_) {
               setState(() {
@@ -1555,7 +1677,7 @@ class _FeedViewState extends State<FeedView> {
     final hasActiveFilters = _activeFiltersCount > 0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
       child: Row(
         children: [
           // Sélecteur de quartier
@@ -1599,19 +1721,20 @@ class _FeedViewState extends State<FeedView> {
                   color: _selectedQuartier != 'Tous'
                       ? BarakaColors.primary.withValues(alpha: 0.1)
                       : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: _selectedQuartier != 'Tous'
                         ? BarakaColors.primary
                         : BarakaColors.border,
                   ),
+                  boxShadow: BarakaColors.cardShadow,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.location_on_outlined,
-                      size: 16,
+                      size: 15,
                       color: _selectedQuartier != 'Tous'
                           ? BarakaColors.primary
                           : BarakaColors.textSecondary,
@@ -1624,7 +1747,7 @@ class _FeedViewState extends State<FeedView> {
                             : _selectedQuartier,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 12,
                           fontWeight: _selectedQuartier != 'Tous'
                               ? FontWeight.bold
                               : FontWeight.w500,
@@ -1635,8 +1758,11 @@ class _FeedViewState extends State<FeedView> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down_rounded,
-                        size: 16, color: Colors.grey),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                   ],
                 ),
               ),
@@ -1717,7 +1843,7 @@ class _FeedViewState extends State<FeedView> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      "Plus récents",
+                      "Plus récents / Pertinents",
                       style: TextStyle(
                         fontWeight: _sortOption == FeedSortOption.recent
                             ? FontWeight.bold
@@ -1735,8 +1861,9 @@ class _FeedViewState extends State<FeedView> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: BarakaColors.border),
+                boxShadow: BarakaColors.cardShadow,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1747,7 +1874,7 @@ class _FeedViewState extends State<FeedView> {
                         : (_sortOption == FeedSortOption.expiration
                             ? Icons.timer_outlined
                             : Icons.auto_awesome_rounded),
-                    size: 16,
+                    size: 15,
                     color: _sortOption == FeedSortOption.expiration
                         ? BarakaColors.terracotta
                         : BarakaColors.primary,
@@ -1760,14 +1887,17 @@ class _FeedViewState extends State<FeedView> {
                             ? "Expiration"
                             : "Récents"),
                     style: const TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: BarakaColors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 16, color: Colors.grey),
+                  const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
                 ],
               ),
             ),
@@ -2157,260 +2287,441 @@ class _DealCardWidgetState extends State<DealCardWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isExpired = _timeLeft.inSeconds <= 0;
     final h = _timeLeft.inHours.toString().padLeft(2, '0');
     final m = (_timeLeft.inMinutes % 60).toString().padLeft(2, '0');
     final s = (_timeLeft.inSeconds % 60).toString().padLeft(2, '0');
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: BarakaColors.border.withValues(alpha: 0.7)),
+        boxShadow: BarakaColors.cardShadow,
+      ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: widget.onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                Image.network(
-                  widget.deal.imageUrl,
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 160,
-                    color: Colors.grey.shade200,
-                    child: const Icon(
-                      Icons.image_not_supported,
-                      size: 40,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: BarakaColors.terracotta,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "-${widget.deal.discountPercentage}%",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 52,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.75),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "$h:$m:$s",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: ValueListenableBuilder<Set<String>>(
-                    valueListenable:
-                        FavoritesService.instance.favoritesNotifier,
-                    builder: (context, favs, _) {
-                      final isFav = favs.contains(widget.deal.id);
-                      return Material(
-                        color: Colors.white.withValues(alpha: 0.92),
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        child: InkWell(
-                          customBorder: const CircleBorder(),
-                          onTap: widget.onToggleFavorite,
-                          child: Padding(
-                            padding: const EdgeInsets.all(7),
-                            child: Icon(
-                              isFav ? Icons.favorite : Icons.favorite_border,
-                              color: isFav
-                                  ? BarakaColors.terracotta
-                                  : Colors.black87,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Zone Image avec superpositions modernes
+              Stack(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Wrap(
-                        spacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: BarakaColors.sageLight,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _getCategoryIcon(widget.deal.category),
-                                  size: 12,
-                                  color: BarakaColors.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  widget.deal.category,
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: BarakaColors.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                  Image.network(
+                    widget.deal.imageUrl,
+                    height: 175,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 175,
+                      color: BarakaColors.sageLight,
+                      child: const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          size: 44,
+                          color: BarakaColors.primaryLight,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Dégradé sombre au bas de l'image pour contraster les puces
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.1),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.65),
+                          ],
+                          stops: const [0.0, 0.45, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Badge Réduction en haut à gauche
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: BarakaColors.terracottaGradient,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: BarakaColors.terracotta.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.location_on_outlined,
-                                  size: 12,
-                                  color: BarakaColors.textSecondary,
-                                ),
-                                const SizedBox(width: 3),
-                                Text(
-                                  widget.deal.location,
-                                  style: const TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: BarakaColors.textSecondary,
-                                  ),
-                                ),
-                              ],
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.bolt_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            "-${widget.deal.discountPercentage}%",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              letterSpacing: -0.2,
                             ),
                           ),
                         ],
                       ),
-                      Row(
+                    ),
+                  ),
+
+                  // Bouton Favoris en haut à droite (verre dépoli)
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: ValueListenableBuilder<Set<String>>(
+                      valueListenable:
+                          FavoritesService.instance.favoritesNotifier,
+                      builder: (context, favs, _) {
+                        final isFav = favs.contains(widget.deal.id);
+                        return Material(
+                          color: Colors.white.withValues(alpha: 0.94),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: widget.onToggleFavorite,
+                            child: Container(
+                              padding: const EdgeInsets.all(7.5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isFav
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                color: isFav
+                                    ? BarakaColors.terracotta
+                                    : BarakaColors.textPrimary,
+                                size: 19,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Décompte de temps en bas à gauche de l'image
+                  Positioned(
+                    bottom: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isExpired
+                            ? BarakaColors.terracotta.withValues(alpha: 0.9)
+                            : Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 13,
+                            color: Colors.white.withValues(alpha: 0.95),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isExpired ? "Expiré" : "$h:$m:$s",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Distance GPS en bas à droite de l'image
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.near_me_outlined,
+                            Icons.near_me_rounded,
                             size: 12,
-                            color: BarakaColors.primary,
+                            color: Colors.white,
                           ),
                           const SizedBox(width: 3),
                           Text(
                             "${_getDistanceKm().toStringAsFixed(1)} km",
                             style: const TextStyle(
-                              fontSize: 12,
+                              color: Colors.white,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: BarakaColors.primary,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.deal.businessName.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.deal.title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "${widget.deal.discountedPrice.toStringAsFixed(0)} MAD",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: BarakaColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            "${widget.deal.originalPrice.toStringAsFixed(0)} MAD",
-                            style: TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: Colors.grey.shade400,
-                            ),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: widget.deal.remainingCount > 0
-                            ? widget.onBook
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BarakaColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text("Bloquer (${widget.deal.remainingCount})"),
-                      ),
-                    ],
                   ),
                 ],
               ),
-            ),
-          ],
+
+              // Contenu textuel et prix
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Ligne catégorie et localisation
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: BarakaColors.sageLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getCategoryIcon(widget.deal.category),
+                                size: 12,
+                                color: BarakaColors.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.deal.category,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: BarakaColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF6F5F2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.place_outlined,
+                                  size: 12,
+                                  color: BarakaColors.textSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    widget.deal.location,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: BarakaColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Nom du commerce
+                    Text(
+                      widget.deal.businessName.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: BarakaColors.textSecondary.withValues(alpha: 0.85),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+
+                    // Titre du panier
+                    Text(
+                      widget.deal.title,
+                      style: const TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: BarakaColors.textPrimary,
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Ligne de Prix et Bouton Réserver
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              "${widget.deal.discountedPrice.toStringAsFixed(0)} MAD",
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.5,
+                                color: BarakaColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${widget.deal.originalPrice.toStringAsFixed(0)} MAD",
+                              style: TextStyle(
+                                fontSize: 13,
+                                decoration: TextDecoration.lineThrough,
+                                decorationColor: Colors.grey.shade400,
+                                color: Colors.grey.shade400,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Bouton d'action à dégradé émeraude
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: widget.deal.remainingCount > 0
+                                ? BarakaColors.primaryGradient
+                                : null,
+                            color: widget.deal.remainingCount > 0
+                                ? null
+                                : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: widget.deal.remainingCount > 0
+                                ? [
+                                    BoxShadow(
+                                      color: BarakaColors.primary
+                                          .withValues(alpha: 0.28),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(14),
+                              onTap: widget.deal.remainingCount > 0
+                                  ? widget.onBook
+                                  : null,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      widget.deal.remainingCount > 0
+                                          ? Icons.shopping_bag_outlined
+                                          : Icons.block_rounded,
+                                      size: 15,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      widget.deal.remainingCount > 0
+                                          ? "Bloquer (${widget.deal.remainingCount})"
+                                          : "Épuisé",
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
