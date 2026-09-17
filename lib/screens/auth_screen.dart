@@ -92,7 +92,7 @@ class _AuthScreenState extends State<AuthScreen> {
             const SizedBox(height: 8),
             Center(
               child: BarakaLogo(
-                size: 85,
+                size: 130,
                 showTagline: true,
               ),
             ),

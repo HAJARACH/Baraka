@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import 'qr_scanner_screen.dart';
 
 class MerchantScreen extends StatefulWidget {
   const MerchantScreen({super.key});
@@ -15,9 +16,12 @@ class _MerchantScreenState extends State<MerchantScreen> {
   Map<String, dynamic>? _verifiedDeal;
   bool _isAlreadyRedeemed = false;
 
-  Future<void> _verifyPass() async {
-    final code = _codeController.text.trim();
+  Future<void> _verifyPass([String? codeParam]) async {
+    final code = (codeParam ?? _codeController.text).trim();
     if (code.isEmpty) return;
+    if (codeParam != null) {
+      _codeController.text = codeParam;
+    }
 
     setState(() {
       _isSearching = true;
@@ -53,11 +57,28 @@ class _MerchantScreenState extends State<MerchantScreen> {
         }
       });
     } catch (e) {
-      setState(() => _isSearching = false);
       debugPrint('Erreur vérification : $e');
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
     }
   }
- Future<void> _redeemPass() async {
+
+  Future<void> _openQrScanner() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+
+    if (result != null && mounted) {
+      final code = result['code']?.toString().trim() ?? '';
+      if (code.isNotEmpty) {
+        _codeController.text = code;
+        await _verifyPass(code);
+      }
+    }
+  }
+
+  Future<void> _redeemPass() async {
     if (_verifiedDeal == null) return;
     final bookingId = _verifiedDeal!['bookingId'];
 
@@ -130,7 +151,45 @@ class _MerchantScreenState extends State<MerchantScreen> {
                     "Scannez le QR Code ou entrez le code à 6 chiffres affiché sur le téléphone du client.",
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _openQrScanner,
+                      icon: const Icon(Icons.camera_alt_rounded, size: 20),
+                      label: const Text(
+                        "Scanner avec l'appareil photo",
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BarakaColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          "OU SAISIR LE PIN",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey.shade300)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(

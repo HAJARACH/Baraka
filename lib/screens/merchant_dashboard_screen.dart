@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
+import 'qr_scanner_screen.dart';
 
 class MerchantDashboardScreen extends StatefulWidget {
   final VoidCallback? onOfferPublished;
@@ -72,9 +73,12 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   }
 
   // Recherche du pass par code
-  Future<void> _searchPass() async {
-    final code = _codeController.text.trim();
+  Future<void> _searchPass([String? codeParam]) async {
+    final code = (codeParam ?? _codeController.text).trim();
     if (code.isEmpty) return;
+    if (codeParam != null) {
+      _codeController.text = codeParam;
+    }
 
     setState(() {
       _isValidating = true;
@@ -101,6 +105,22 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
       _showMessage("Erreur de recherche : $e", Colors.redAccent);
     } finally {
       if (mounted) setState(() => _isValidating = false);
+    }
+  }
+
+  // Ouverture du scanner de QR Code via caméra
+  Future<void> _openQrScanner() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+
+    if (result != null && mounted) {
+      final code = result['code']?.toString().trim() ?? '';
+      if (code.isNotEmpty) {
+        _codeController.text = code;
+        await _searchPass(code);
+      }
     }
   }
 
@@ -166,7 +186,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         'category': _selectedCategory,
         'remaining_count': stock,
         'expires_at':
-            DateTime.now().add(const Duration(hours: 4)).toIso8601String(),
+            DateTime.now().add(const Duration(days: 3)).toIso8601String(),
         if (user != null) 'merchant_id': user.id,
       });
 
@@ -178,7 +198,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
       _stockController.text = "5";
       _imageUrlController.clear();
 
-      _showMessage("Offre flash publiée avec succès ! (Valable 4h)", BarakaColors.primary);
+      _showMessage("Offre flash publiée avec succès ! (Valable 3 jours)", BarakaColors.primary);
       if (widget.onOfferPublished != null) widget.onOfferPublished!();
       setState(() {});
     } catch (e) {
@@ -327,7 +347,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Carte de saisie du PIN
+          // Carte de validation : Scan Caméra ou Saisie PIN
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -343,11 +363,11 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
               ],
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.check_circle_outline, color: BarakaColors.primary),
+                    Icon(Icons.qr_code_scanner, color: BarakaColors.primary, size: 24),
                     SizedBox(width: 8),
                     Text(
                       "Validation du Pass Client",
@@ -356,12 +376,56 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  "Saisissez le code à 6 chiffres affiché sur le téléphone du client pour vérifier et encaisser.",
+                  "Scannez le QR code affiché sur le téléphone du client ou saisissez manuellement son code PIN.",
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
+
+                // Bouton principal : Scan Caméra
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: _openQrScanner,
+                    icon: const Icon(Icons.camera_alt_rounded, size: 22),
+                    label: const Text(
+                      "Scanner le QR Code avec la caméra",
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: BarakaColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        "OU SAISIR LE CODE PIN",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade500,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
                 Row(
                   children: [
                     Expanded(
@@ -393,9 +457,9 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: _isValidating ? null : _searchPass,
+                      onPressed: _isValidating ? null : () => _searchPass(),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: BarakaColors.primary,
+                        backgroundColor: BarakaColors.primaryLight,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 16),
@@ -546,7 +610,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "Votre offre sera immédiatement visible par les clients de Marrakech pendant 4 heures.",
+                    "Votre offre sera immédiatement visible par les clients de Marrakech pendant 3 jours.",
                     style: TextStyle(
                         fontSize: 13,
                         color: BarakaColors.primaryDark,
@@ -664,7 +728,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                           color: Colors.white, strokeWidth: 2),
                     )
                   : const Text(
-                      "Publier l'offre flash (4h)",
+                      "Publier l'offre (valable 3 jours)",
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),

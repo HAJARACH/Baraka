@@ -330,53 +330,42 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       appBar: _currentIndex == 0
           ? AppBar(
               title: const BarakaAppBarTitle(),
+              titleSpacing: 16,
               actions: [
-                IconButton(
-                  icon: ValueListenableBuilder<Set<String>>(
-                    valueListenable:
-                        FavoritesService.instance.favoritesNotifier,
-                    builder: (context, favs, _) {
-                      const icon = Icon(
-                        Icons.favorite_outline,
-                        color: BarakaColors.terracotta,
-                      );
-                      if (favs.isNotEmpty) {
-                        return Badge(
-                          label: Text('${favs.length}'),
-                          backgroundColor: BarakaColors.terracotta,
-                          child: icon,
-                        );
-                      }
-                      return icon;
-                    },
-                  ),
-                  tooltip: "Mes Favoris",
-                  onPressed: () => setState(() => _currentIndex = 1),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.confirmation_number_outlined,
-                    color: BarakaColors.primary,
-                  ),
-                  tooltip: "Mes Pass Réservés",
-                  onPressed: () => setState(() => _currentIndex = 2),
-                ),
                 if (user == null)
-                  TextButton.icon(
-                    onPressed: () => _openAuthModal(),
-                    icon: const Icon(Icons.login, color: BarakaColors.primary),
-                    label: const Text(
-                      "Connexion",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: TextButton.icon(
+                      onPressed: () => _openAuthModal(),
+                      icon: const Icon(
+                        Icons.login_rounded,
+                        size: 18,
                         color: BarakaColors.primary,
+                      ),
+                      label: const Text(
+                        "Connexion",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: BarakaColors.primary,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        backgroundColor: BarakaColors.sageLight,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                     ),
                   )
                 else ...[
-                  if (_userRole != null)
+                  if (_userRole == 'admin' || _userRole == 'merchant')
                     Container(
-                      margin: const EdgeInsets.only(right: 6),
+                      margin: const EdgeInsets.only(right: 4),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
@@ -384,47 +373,145 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                       decoration: BoxDecoration(
                         color: _userRole == 'admin'
                             ? BarakaColors.terracottaLight
-                            : (_userRole == 'merchant'
-                                ? BarakaColors.sage
-                                : Colors.grey.shade200),
+                            : BarakaColors.sage,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _userRole == 'admin'
                               ? BarakaColors.terracotta
-                              : (_userRole == 'merchant'
-                                  ? BarakaColors.primaryLight
-                                  : Colors.grey.shade300),
+                              : BarakaColors.primaryLight,
                         ),
                       ),
                       child: Text(
-                        _userRole == 'admin'
-                            ? 'Admin'
-                            : (_userRole == 'merchant' ? 'Pro' : 'Client'),
+                        _userRole == 'admin' ? 'Admin' : 'Pro',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                           color: _userRole == 'admin'
                               ? BarakaColors.terracottaDark
-                              : (_userRole == 'merchant'
-                                  ? BarakaColors.primaryDark
-                                  : BarakaColors.textPrimary),
+                              : BarakaColors.primaryDark,
                         ),
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Center(
+                  PopupMenuButton<String>(
+                    tooltip: "Mon compte",
+                    offset: const Offset(0, 46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    icon: CircleAvatar(
+                      radius: 15,
+                      backgroundColor: BarakaColors.primary,
                       child: Text(
-                        user.email?.split('@').first ?? 'Connecté',
+                        (user.email?.isNotEmpty == true
+                                ? user.email![0].toUpperCase()
+                                : 'U'),
                         style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                           fontSize: 12,
-                          color: Colors.grey,
                         ),
                       ),
                     ),
+                    onSelected: (val) async {
+                      if (val == 'admin' || val == 'merchant') {
+                        setState(() => _currentIndex = 3);
+                      } else if (val == 'logout') {
+                        await supabase.auth.signOut();
+                        FavoritesService.instance.clear();
+                        setState(() {
+                          _userRole = null;
+                          _currentIndex = 0;
+                        });
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        enabled: false,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              user.email ?? '',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: BarakaColors.textPrimary,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _userRole == 'admin'
+                                  ? 'Administrateur'
+                                  : (_userRole == 'merchant'
+                                      ? 'Commerçant Partenaire'
+                                      : 'Client'),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: BarakaColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      if (_userRole == 'admin')
+                        const PopupMenuItem(
+                          value: 'admin',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.admin_panel_settings_outlined,
+                                size: 19,
+                                color: BarakaColors.primary,
+                              ),
+                              SizedBox(width: 10),
+                              Text("Panneau Admin"),
+                            ],
+                          ),
+                        )
+                      else if (_userRole == 'merchant')
+                        const PopupMenuItem(
+                          value: 'merchant',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.storefront_outlined,
+                                size: 19,
+                                color: BarakaColors.primary,
+                              ),
+                              SizedBox(width: 10),
+                              Text("Espace Pro"),
+                            ],
+                          ),
+                        ),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.logout,
+                              size: 19,
+                              color: Colors.redAccent,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              "Déconnexion",
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   IconButton(
-                    icon: const Icon(Icons.logout),
+                    icon: const Icon(
+                      Icons.logout,
+                      size: 20,
+                      color: BarakaColors.textSecondary,
+                    ),
                     tooltip: "Déconnexion",
                     onPressed: () async {
                       await supabase.auth.signOut();
@@ -436,7 +523,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
                     },
                   ),
                 ],
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
             )
           : null,
@@ -1643,7 +1730,7 @@ class _AuthPageState extends State<AuthPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const BarakaLogo(size: 115, showTagline: true),
+              const BarakaLogo(size: 140, showTagline: true),
               const SizedBox(height: 18),
               Text(
                 _isSignUp
@@ -1964,7 +2051,7 @@ class _MerchantViewState extends State<MerchantView> {
 
     try {
       final expires = DateTime.now()
-          .add(const Duration(hours: 4))
+          .add(const Duration(days: 3))
           .toIso8601String();
 
       await supabase.from('deals').insert({

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Palette de couleurs extraite de la charte graphique et du logo officiel Baraka
 class BarakaColors {
-  // Vert Émeraude / Forêt Majorelle (Couleur emblématique du B et de "Baraká")
+  // Vert Émeraude / Forêt Majorelle (Couleur emblématique du B et de "Baraka")
   static const Color primary = Color(0xFF1B4D3E);
   static const Color primaryDark = Color(0xFF10332B);
   static const Color primaryLight = Color(0xFF2E6F5B);

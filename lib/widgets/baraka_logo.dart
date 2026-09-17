@@ -4,11 +4,13 @@ import '../theme/app_theme.dart';
 class BarakaLogo extends StatelessWidget {
   final double size;
   final bool showTagline;
+  final Color? backgroundColor;
 
   const BarakaLogo({
     super.key,
-    this.size = 120,
+    this.size = 140,
     this.showTagline = true,
+    this.backgroundColor = Colors.white,
   });
 
   @override
@@ -19,12 +21,14 @@ class BarakaLogo extends StatelessWidget {
         Container(
           width: size,
           height: size,
+          padding: EdgeInsets.all(size * 0.08),
           decoration: BoxDecoration(
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(size * 0.22),
             boxShadow: [
               BoxShadow(
                 color: BarakaColors.primary.withValues(alpha: 0.08),
-                blurRadius: 16,
+                blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
             ],
@@ -76,10 +80,11 @@ class BarakaAppBarTitle extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 32,
-          height: 32,
+          width: 35,
+          height: 35,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(9),
             boxShadow: [
               BoxShadow(
                 color: BarakaColors.primary.withValues(alpha: 0.1),
@@ -89,9 +94,10 @@ class BarakaAppBarTitle extends StatelessWidget {
             ],
           ),
           clipBehavior: Clip.antiAlias,
+          padding: const EdgeInsets.all(3),
           child: Image.asset(
             'assets/images/logo.png',
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => Container(
               color: BarakaColors.primary,
               child: const Center(
@@ -107,30 +113,25 @@ class BarakaAppBarTitle extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        RichText(
-          text: const TextSpan(
-            style: TextStyle(
-              fontSize: 19,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.3,
-              color: BarakaColors.primary,
-            ),
-            children: [
-              TextSpan(text: "Barak"),
-              TextSpan(
-                text: "á",
-                style: TextStyle(color: BarakaColors.terracotta),
+        const SizedBox(width: 8),
+        Flexible(
+          child: RichText(
+            overflow: TextOverflow.ellipsis,
+            text: const TextSpan(
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.4,
+                color: BarakaColors.primary,
               ),
-              TextSpan(
-                text: " Marrakech",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: BarakaColors.textSecondary,
+              children: [
+                TextSpan(text: "Barak"),
+                TextSpan(
+                  text: "a",
+                  style: TextStyle(color: BarakaColors.terracotta),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
