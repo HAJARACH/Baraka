@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/admin_screen.dart';
+import 'screens/category_hub_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/merchant_dashboard_screen.dart';
 import 'screens/my_passes_screen.dart';
@@ -126,7 +127,8 @@ class DealItem {
 // Écran Principal
 // -------------------------------------------------------------
 class MainHomeScreen extends StatefulWidget {
-  const MainHomeScreen({super.key});
+  final String? initialMacroCategory;
+  const MainHomeScreen({super.key, this.initialMacroCategory});
 
   @override
   State<MainHomeScreen> createState() => _MainHomeScreenState();
@@ -622,6 +624,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       return FeedView(
         userLat: _userLat,
         userLng: _userLng,
+        initialMacroCategory: widget.initialMacroCategory,
         onRequireAuth: (action) => _openAuthModal(onSuccess: action),
         onOpenMyPasses: () => setState(() {
           _passesRefreshKey++;
@@ -941,6 +944,7 @@ enum FeedSortOption {
 class FeedView extends StatefulWidget {
   final double userLat;
   final double userLng;
+  final String? initialMacroCategory;
   final void Function(VoidCallback action) onRequireAuth;
   final VoidCallback? onOpenMyPasses;
 
@@ -949,6 +953,7 @@ class FeedView extends StatefulWidget {
     required this.userLat,
     required this.userLng,
     required this.onRequireAuth,
+    this.initialMacroCategory,
     this.onOpenMyPasses,
   });
 
@@ -960,17 +965,36 @@ class _FeedViewState extends State<FeedView> {
   late Future<List<DealItem>> _dealsFuture;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  late String _selectedMacroCategory;
   String _selectedCategory = 'Tous';
   String _selectedQuartier = 'Tous';
   FeedSortOption _sortOption = FeedSortOption.distance;
 
-  static const List<Map<String, dynamic>> _categories = [
+  static const List<Map<String, dynamic>> _alimentaireCategories = [
+    {'label': 'Tous', 'icon': Icons.restaurant_menu_rounded},
+    {'label': 'Boulangerie', 'icon': Icons.bakery_dining_rounded},
+    {'label': 'Restaurant', 'icon': Icons.restaurant_rounded},
+    {'label': 'Épicerie', 'icon': Icons.local_grocery_store_rounded},
+  ];
+
+  static const List<Map<String, dynamic>> _servicesCategories = [
+    {'label': 'Tous', 'icon': Icons.room_service_rounded},
+    {'label': 'Fleuriste', 'icon': Icons.local_florist_rounded},
+  ];
+
+  static const List<Map<String, dynamic>> _allCategories = [
     {'label': 'Tous', 'icon': Icons.grid_view_rounded},
     {'label': 'Boulangerie', 'icon': Icons.bakery_dining_rounded},
     {'label': 'Restaurant', 'icon': Icons.restaurant_rounded},
     {'label': 'Épicerie', 'icon': Icons.local_grocery_store_rounded},
     {'label': 'Fleuriste', 'icon': Icons.local_florist_rounded},
   ];
+
+  List<Map<String, dynamic>> get _currentCategories {
+    if (_selectedMacroCategory == 'Alimentaire') return _alimentaireCategories;
+    if (_selectedMacroCategory == 'Services') return _servicesCategories;
+    return _allCategories;
+  }
 
   static const List<String> _quartiers = [
     'Tous',
@@ -987,6 +1011,7 @@ class _FeedViewState extends State<FeedView> {
   @override
   void initState() {
     super.initState();
+    _selectedMacroCategory = widget.initialMacroCategory ?? 'Tous';
     _refresh();
   }
 
@@ -1026,7 +1051,59 @@ class _FeedViewState extends State<FeedView> {
     return r * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)));
   }
 
+  bool _isAlimentaire(DealItem deal) {
+    final text =
+        "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
+    return text.contains('boulang') ||
+        text.contains('patiss') ||
+        text.contains('pâtiss') ||
+        text.contains('pain') ||
+        text.contains('croissant') ||
+        text.contains('viennoiserie') ||
+        text.contains('bakery') ||
+        text.contains('restau') ||
+        text.contains('food') ||
+        text.contains('plat') ||
+        text.contains('repas') ||
+        text.contains('traiteur') ||
+        text.contains('snack') ||
+        text.contains('café') ||
+        text.contains('cafe') ||
+        text.contains('burger') ||
+        text.contains('pizza') ||
+        text.contains('tajine') ||
+        text.contains('couscous') ||
+        text.contains('épicer') ||
+        text.contains('epicer') ||
+        text.contains('supermarch') ||
+        text.contains('grocery') ||
+        text.contains('primeur') ||
+        text.contains('fruit') ||
+        text.contains('légume') ||
+        text.contains('alimentation');
+  }
+
+  bool _isServices(DealItem deal) {
+    final text =
+        "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
+    return text.contains('fleur') ||
+        text.contains('florist') ||
+        text.contains('plante') ||
+        text.contains('bouquet') ||
+        text.contains('beauté') ||
+        text.contains('beaute') ||
+        text.contains('soin') ||
+        text.contains('coiff') ||
+        text.contains('artisan');
+  }
+
   bool _matchesCategory(DealItem deal, String category) {
+    if (_selectedMacroCategory == 'Alimentaire' && category == 'Tous') {
+      return _isAlimentaire(deal);
+    }
+    if (_selectedMacroCategory == 'Services' && category == 'Tous') {
+      return _isServices(deal);
+    }
     if (category == 'Tous') return true;
 
     final dealCategory = deal.category.toLowerCase();
@@ -1124,6 +1201,7 @@ class _FeedViewState extends State<FeedView> {
   int get _activeFiltersCount {
     int count = 0;
     if (_searchQuery.trim().isNotEmpty) count++;
+    if (_selectedMacroCategory != 'Tous') count++;
     if (_selectedCategory != 'Tous') count++;
     if (_selectedQuartier != 'Tous') count++;
     if (_sortOption != FeedSortOption.distance) count++;
@@ -1134,6 +1212,7 @@ class _FeedViewState extends State<FeedView> {
     setState(() {
       _searchController.clear();
       _searchQuery = '';
+      _selectedMacroCategory = 'Tous';
       _selectedCategory = 'Tous';
       _selectedQuartier = 'Tous';
       _sortOption = FeedSortOption.distance;
@@ -1301,19 +1380,140 @@ class _FeedViewState extends State<FeedView> {
     );
   }
 
+  Widget _buildMacroCategorySelector() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: BarakaColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  _buildMacroTab('Tous', 'Tout', Icons.auto_awesome_mosaic_rounded),
+                  _buildMacroTab('Alimentaire', 'Alimentaire', Icons.restaurant_rounded),
+                  _buildMacroTab('Services', 'Services', Icons.room_service_rounded),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: "Changer d'univers",
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CategoryHubScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: BarakaColors.border),
+                  ),
+                  child: const Icon(
+                    Icons.dashboard_customize_rounded,
+                    size: 20,
+                    color: BarakaColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMacroTab(String key, String title, IconData icon) {
+    final isSelected = _selectedMacroCategory == key;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedMacroCategory = key;
+            _selectedCategory = 'Tous';
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? BarakaColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : BarakaColors.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  title,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? Colors.white : BarakaColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCategorySelector() {
+    final categories = _currentCategories;
     return SizedBox(
       height: 44,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
+        itemCount: categories.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final cat = _categories[index];
-          final label = cat['label'] as String;
+          final cat = categories[index];
+          final rawLabel = cat['label'] as String;
           final icon = cat['icon'] as IconData;
-          final isSelected = _selectedCategory == label;
+          final isSelected = _selectedCategory == rawLabel;
+
+          String displayLabel = rawLabel;
+          if (rawLabel == 'Tous') {
+            if (_selectedMacroCategory == 'Alimentaire') {
+              displayLabel = "Tout l'alimentaire";
+            } else if (_selectedMacroCategory == 'Services') {
+              displayLabel = "Tous les services";
+            } else {
+              displayLabel = "Toutes";
+            }
+          }
 
           return ChoiceChip(
             selected: isSelected,
@@ -1324,7 +1524,7 @@ class _FeedViewState extends State<FeedView> {
               color: isSelected ? Colors.white : BarakaColors.primary,
             ),
             label: Text(
-              label,
+              displayLabel,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 12.5,
@@ -1342,7 +1542,7 @@ class _FeedViewState extends State<FeedView> {
             ),
             onSelected: (_) {
               setState(() {
-                _selectedCategory = label;
+                _selectedCategory = rawLabel;
               });
             },
           );
@@ -1776,6 +1976,7 @@ class _FeedViewState extends State<FeedView> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Column(
             children: [
+              _buildMacroCategorySelector(),
               _buildSearchBar(),
               _buildCategorySelector(),
               _buildFilterAndSortBar(0),
@@ -1788,6 +1989,7 @@ class _FeedViewState extends State<FeedView> {
         if (snapshot.hasError) {
           return Column(
             children: [
+              _buildMacroCategorySelector(),
               _buildSearchBar(),
               _buildCategorySelector(),
               _buildFilterAndSortBar(0),
@@ -1823,6 +2025,7 @@ class _FeedViewState extends State<FeedView> {
           onRefresh: () async => _refresh(),
           child: Column(
             children: [
+              _buildMacroCategorySelector(),
               _buildSearchBar(),
               _buildCategorySelector(),
               _buildFilterAndSortBar(filteredDeals.length),
