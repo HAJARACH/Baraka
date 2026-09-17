@@ -14,6 +14,7 @@ import 'screens/splash_screen.dart';
 import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
 import 'utils/fuzzy_search.dart';
+import 'widgets/app_background.dart';
 import 'widgets/baraka_logo.dart';
 
 Future<void> main() async {
@@ -552,7 +553,9 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
               ],
             )
           : null,
-      body: _buildCurrentBody(user),
+      body: AppBackground(
+        child: _buildCurrentBody(user),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),

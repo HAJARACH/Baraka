@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_background.dart';
 import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -127,20 +128,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       body: GestureDetector(
         onTap: _navigateToHome, // Permet de passer le splash screen en touchant l'écran
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFFFFFDF9),
-                BarakaColors.background,
-                Color(0xFFF3ECE1),
-              ],
-            ),
-          ),
+        child: AppBackground(
           child: Stack(
             children: [
               // Halos décoratifs subtils en arrière-plan

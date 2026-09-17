@@ -8,9 +8,9 @@ void main() {
   ) async {
     await tester.pumpWidget(const MaterialApp(home: SplashScreen()));
 
-    // Vérifie la présence du slogan, de la ville et de l'image du logo
+    // Vérifie la présence du slogan, de la ville et des images (fond et logo)
     expect(find.text("Des petits gestes, des grands impacts."), findsOneWidget);
     expect(find.text("MARRAKECH"), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
+    expect(find.byType(Image), findsNWidgets(2));
   });
 }
