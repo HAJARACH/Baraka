@@ -13,6 +13,7 @@ import 'screens/my_passes_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
+import 'utils/fuzzy_search.dart';
 import 'widgets/baraka_logo.dart';
 
 Future<void> main() async {
@@ -77,6 +78,26 @@ class DealItem {
 
   int get discountPercentage =>
       (((originalPrice - discountedPrice) / originalPrice) * 100).round();
+
+  bool matchesSearch(String query) {
+    return FuzzySearch.matchesDeal(
+      title: title,
+      businessName: businessName,
+      location: location,
+      category: category,
+      query: query,
+    );
+  }
+
+  double searchRelevance(String query) {
+    return FuzzySearch.calculateRelevanceScore(
+      title: title,
+      businessName: businessName,
+      location: location,
+      category: category,
+      query: query,
+    );
+  }
 
   factory DealItem.fromMap(Map<String, dynamic> map) {
     return DealItem(
@@ -1066,12 +1087,7 @@ class _FeedViewState extends State<FeedView> {
   }
 
   bool _matchesSearch(DealItem deal, String query) {
-    if (query.trim().isEmpty) return true;
-    final q = query.trim().toLowerCase();
-    return deal.title.toLowerCase().contains(q) ||
-        deal.businessName.toLowerCase().contains(q) ||
-        deal.location.toLowerCase().contains(q) ||
-        deal.category.toLowerCase().contains(q);
+    return deal.matchesSearch(query);
   }
 
   List<DealItem> _applyFiltersAndSort(List<DealItem> allDeals) {
@@ -1091,7 +1107,11 @@ class _FeedViewState extends State<FeedView> {
         filtered.sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
         break;
       case FeedSortOption.recent:
-        // Garde l'ordre de création par défaut
+        if (_searchQuery.trim().isNotEmpty) {
+          filtered.sort((a, b) => b
+              .searchRelevance(_searchQuery)
+              .compareTo(a.searchRelevance(_searchQuery)));
+        }
         break;
     }
 
@@ -1247,7 +1267,7 @@ class _FeedViewState extends State<FeedView> {
           controller: _searchController,
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
-            hintText: "Rechercher à Marrakech (pain, tajine, fleurs...)",
+            hintText: "Rechercher (ex: croisant, tajin, fleurist...)",
             hintStyle: TextStyle(
               color: BarakaColors.textSecondary.withValues(alpha: 0.8),
               fontSize: 13,
@@ -1573,21 +1593,60 @@ class _FeedViewState extends State<FeedView> {
   }
 
   Widget _buildResultsBanner(int count) {
-    String locationLabel = _selectedQuartier == 'Tous'
+    final hasSearch = _searchQuery.trim().isNotEmpty;
+    final locationLabel = _selectedQuartier == 'Tous'
         ? "à Marrakech"
         : "à $_selectedQuartier";
+
+    final bannerLabel = hasSearch
+        ? "$count résultat${count > 1 ? 's' : ''} pour « ${_searchQuery.trim()} »"
+        : "$count panier${count > 1 ? 's' : ''} $locationLabel";
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            "$count panier${count > 1 ? 's' : ''} $locationLabel",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: BarakaColors.textSecondary.withValues(alpha: 0.9),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    bannerLabel,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: BarakaColors.textSecondary.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+                if (hasSearch && count > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: BarakaColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, size: 10, color: BarakaColors.primary),
+                        SizedBox(width: 3),
+                        Text(
+                          "Recherche intelligente",
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: BarakaColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           if (_sortOption == FeedSortOption.distance)
@@ -1616,6 +1675,21 @@ class _FeedViewState extends State<FeedView> {
                   style: TextStyle(
                     fontSize: 11,
                     color: BarakaColors.terracotta,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            )
+          else if (hasSearch)
+            const Row(
+              children: [
+                Icon(Icons.star_rounded, size: 12, color: BarakaColors.primary),
+                SizedBox(width: 4),
+                Text(
+                  "Plus pertinents",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: BarakaColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1656,9 +1730,11 @@ class _FeedViewState extends State<FeedView> {
             ),
             const SizedBox(height: 8),
             Text(
-              _activeFiltersCount > 0
-                  ? "Aucune offre ne correspond à vos filtres actuels.\nEssayez de modifier votre quartier ou catégorie."
-                  : "Revenez un peu plus tard pour découvrir de nouvelles offres.",
+              _searchQuery.trim().isNotEmpty
+                  ? "Aucune offre ne correspond à « ${_searchQuery.trim()} ».\nMême avec la correction des fautes d'orthographe, aucun résultat n'a été trouvé."
+                  : (_activeFiltersCount > 0
+                      ? "Aucune offre ne correspond à vos filtres actuels.\nEssayez de modifier votre quartier ou catégorie."
+                      : "Revenez un peu plus tard pour découvrir de nouvelles offres."),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,

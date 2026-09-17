@@ -73,12 +73,7 @@ bool matchesQuartier(DealItem deal, String quartier) {
 }
 
 bool matchesSearch(DealItem deal, String query) {
-  if (query.trim().isEmpty) return true;
-  final q = query.trim().toLowerCase();
-  return deal.title.toLowerCase().contains(q) ||
-      deal.businessName.toLowerCase().contains(q) ||
-      deal.location.toLowerCase().contains(q) ||
-      deal.category.toLowerCase().contains(q);
+  return deal.matchesSearch(query);
 }
 
 void main() {
@@ -212,7 +207,7 @@ void main() {
     });
   });
 
-  group('Recherche textuelle sur le feed', () {
+  group('Recherche textuelle intelligente et tolérante aux fautes d\'orthographe', () {
     test('Recherche par nom de commerce', () {
       final results = allDeals.where((d) => matchesSearch(d, 'Majorelle')).toList();
       expect(results.length, 1);
@@ -229,6 +224,52 @@ void main() {
       final results = allDeals.where((d) => matchesSearch(d, '  Viennoiseries  ')).toList();
       expect(results.length, 1);
       expect(results.first.id, '1');
+    });
+
+    test('Faute d\'orthographe : omission de lettre (croisant au lieu de croissant)', () {
+      final results = allDeals.where((d) => matchesSearch(d, 'croisant')).toList();
+      expect(results.length, 1);
+      expect(results.first.id, '1'); // Boulangerie Paul
+    });
+
+    test('Faute d\'orthographe : omission de lettre (tajin au lieu de tajine)', () {
+      final results = allDeals.where((d) => matchesSearch(d, 'tajin')).toList();
+      expect(results.length, 1);
+      expect(results.first.id, '2'); // Riad Saveurs Médina
+    });
+
+    test('Faute de frappe : inversion de lettres / transposition (tajnie au lieu de tajine)', () {
+      final results = allDeals.where((d) => matchesSearch(d, 'tajnie')).toList();
+      expect(results.length, 1);
+      expect(results.first.id, '2');
+    });
+
+    test('Faute de frappe : substitution / translittération (tagine pour tajine)', () {
+      final results = allDeals.where((d) => matchesSearch(d, 'tagine')).toList();
+      expect(results.length, 1);
+      expect(results.first.id, '2');
+    });
+
+    test('Faute d\'orthographe sur le commerce (majorel pour Majorelle)', () {
+      final results = allDeals.where((d) => matchesSearch(d, 'majorel')).toList();
+      expect(results.length, 1);
+      expect(results.first.id, '4');
+    });
+
+    test('Recherche sans accent (gueliz pour Guéliz, medina pour Médina)', () {
+      final resultsGueliz = allDeals.where((d) => matchesSearch(d, 'gueliz')).toList();
+      expect(resultsGueliz.length, 2); // 1 et 4
+      expect(resultsGueliz.map((d) => d.id), containsAll(['1', '4']));
+
+      final resultsMedina = allDeals.where((d) => matchesSearch(d, 'medina')).toList();
+      expect(resultsMedina.length, 1);
+      expect(resultsMedina.first.id, '2');
+    });
+
+    test('Recherche avec faute et mot de liaison (panier de frui)', () {
+      final results = allDeals.where((d) => matchesSearch(d, 'panier de frui')).toList();
+      expect(results.length, 1);
+      expect(results.first.id, '3'); // Épicerie Bio
     });
   });
 
