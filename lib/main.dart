@@ -10,6 +10,7 @@ import 'screens/admin_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/merchant_dashboard_screen.dart';
 import 'screens/my_passes_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/favorites_service.dart';
 import 'theme/app_theme.dart';
 import 'widgets/baraka_logo.dart';
@@ -37,7 +38,7 @@ class BarakaApp extends StatelessWidget {
       title: 'Baraka Marrakech',
       debugShowCheckedModeBanner: false,
       theme: BarakaTheme.lightTheme,
-      home: const MainHomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

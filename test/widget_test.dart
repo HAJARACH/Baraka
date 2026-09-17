@@ -1,7 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:baraka_app/screens/splash_screen.dart';
 
 void main() {
-  test('Baraka App unit smoke test', () {
-    expect(1 + 1, equals(2));
+  testWidgets('SplashScreen renders logo, Baraka brand and slogan', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: SplashScreen()));
+
+    // Vérifie la présence du slogan, de la ville et de l'image du logo
+    expect(find.text("Des petits gestes, des grands impacts."), findsOneWidget);
+    expect(find.text("MARRAKECH"), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
   });
 }
