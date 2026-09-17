@@ -10,48 +10,51 @@ class BarakaLogo extends StatelessWidget {
     super.key,
     this.size = 140,
     this.showTagline = true,
-    this.backgroundColor = Colors.white,
+    this.backgroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: size,
-          height: size,
-          padding: EdgeInsets.all(size * 0.08),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(size * 0.22),
-            boxShadow: [
-              BoxShadow(
-                color: BarakaColors.primary.withValues(alpha: 0.08),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.asset(
-            'assets/images/logo.png',
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: BarakaColors.primary,
-              child: Center(
-                child: Text(
-                  "B",
-                  style: TextStyle(
-                    fontSize: size * 0.5,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+    Widget logoWidget = Image.asset(
+      'assets/images/logo.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: BarakaColors.primary,
+          borderRadius: BorderRadius.circular(size * 0.2),
+        ),
+        child: Center(
+          child: Text(
+            "B",
+            style: TextStyle(
+              fontSize: size * 0.5,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
         ),
+      ),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (backgroundColor != null)
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(size * 0.22),
+            ),
+            child: logoWidget,
+          )
+        else
+          logoWidget,
         if (showTagline) ...[
           const SizedBox(height: 10),
           const Text(
@@ -79,35 +82,25 @@ class BarakaAppBarTitle extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 35,
-          height: 35,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(9),
-            boxShadow: [
-              BoxShadow(
-                color: BarakaColors.primary.withValues(alpha: 0.1),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          padding: const EdgeInsets.all(3),
-          child: Image.asset(
-            'assets/images/logo.png',
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => Container(
+        Image.asset(
+          'assets/images/logo.png',
+          width: 32,
+          height: 32,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) => Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
               color: BarakaColors.primary,
-              child: const Center(
-                child: Text(
-                  "B",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Text(
+                "B",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ),

@@ -27,10 +27,14 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   final _stockController = TextEditingController(text: "5");
   final _locationController = TextEditingController(text: "Guéliz, Marrakech");
   final _imageUrlController = TextEditingController();
-  String _selectedCategory = 'Food';
+  String _selectedCategory = 'Boulangerie';
   bool _isPublishing = false;
 
   static const Map<String, String> _categoryImages = {
+    'Boulangerie': 'https://images.unsplash.com/photo-1509440159596-0249088772ff',
+    'Restaurant': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
+    'Épicerie': 'https://images.unsplash.com/photo-1542838132-92c53300491e',
+    'Fleuriste': 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9',
     'Food': 'https://images.unsplash.com/photo-1541544741938-0af808871cc0',
     'Bien-être': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef',
     'Activités': 'https://images.unsplash.com/photo-1533105079780-92b9be482077',
@@ -697,9 +701,16 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            items: ['Food', 'Bien-être', 'Activités', 'Shopping']
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                .toList(),
+            items: [
+              'Boulangerie',
+              'Restaurant',
+              'Épicerie',
+              'Fleuriste',
+              'Food',
+              'Bien-être',
+              'Activités',
+              'Shopping',
+            ].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: (val) {
               if (val != null) setState(() => _selectedCategory = val);
             },

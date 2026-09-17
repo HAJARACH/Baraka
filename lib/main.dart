@@ -57,6 +57,7 @@ class DealItem {
   final double longitude;
   final String imageUrl;
   final DateTime expiresAt;
+  final String category;
 
   DealItem({
     required this.id,
@@ -70,6 +71,7 @@ class DealItem {
     required this.longitude,
     required this.imageUrl,
     required this.expiresAt,
+    this.category = 'Général',
   });
 
   int get discountPercentage =>
@@ -92,6 +94,7 @@ class DealItem {
       expiresAt:
           DateTime.tryParse(map['expires_at'] ?? '') ??
           DateTime.now().add(const Duration(hours: 4)),
+      category: map['category'] ?? 'Général',
     );
   }
 }
@@ -622,6 +625,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
             longitude: deal.longitude,
             imageUrl: deal.imageUrl,
             expiresAt: deal.expiresAt,
+            category: deal.category,
           );
           _executeBookingFromDeal(dealItem);
         },
@@ -638,6 +642,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
             longitude: deal.longitude,
             imageUrl: deal.imageUrl,
             expiresAt: deal.expiresAt,
+            category: deal.category,
           );
           Navigator.push(
             context,
@@ -897,7 +902,16 @@ class ClientGuardView extends StatelessWidget {
 }
 
 // -------------------------------------------------------------
-// Flux Public des Deals
+// Options de Tri du Feed
+// -------------------------------------------------------------
+enum FeedSortOption {
+  distance,
+  expiration,
+  recent,
+}
+
+// -------------------------------------------------------------
+// Flux Public des Deals avec Recherche et Filtres Marrakech
 // -------------------------------------------------------------
 class FeedView extends StatefulWidget {
   final double userLat;
@@ -919,11 +933,42 @@ class FeedView extends StatefulWidget {
 
 class _FeedViewState extends State<FeedView> {
   late Future<List<DealItem>> _dealsFuture;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  String _selectedCategory = 'Tous';
+  String _selectedQuartier = 'Tous';
+  FeedSortOption _sortOption = FeedSortOption.distance;
+
+  static const List<Map<String, dynamic>> _categories = [
+    {'label': 'Tous', 'icon': Icons.grid_view_rounded},
+    {'label': 'Boulangerie', 'icon': Icons.bakery_dining_rounded},
+    {'label': 'Restaurant', 'icon': Icons.restaurant_rounded},
+    {'label': 'Épicerie', 'icon': Icons.local_grocery_store_rounded},
+    {'label': 'Fleuriste', 'icon': Icons.local_florist_rounded},
+  ];
+
+  static const List<String> _quartiers = [
+    'Tous',
+    'Guéliz',
+    'Médina',
+    'Hivernage',
+    'Agdal',
+    'Sidi Ghanem',
+    'Palmeraie',
+    'Semlalia',
+    'Targa',
+  ];
 
   @override
   void initState() {
     super.initState();
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _refresh() {
@@ -942,6 +987,133 @@ class _FeedViewState extends State<FeedView> {
         .order('created_at', ascending: false);
 
     return (res as List).map((r) => DealItem.fromMap(r)).toList();
+  }
+
+  double _getDealDistanceKm(DealItem deal) {
+    const double r = 6371.0;
+    final dLat = (deal.latitude - widget.userLat) * (math.pi / 180.0);
+    final dLon = (deal.longitude - widget.userLng) * (math.pi / 180.0);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(widget.userLat * (math.pi / 180.0)) *
+            math.cos(deal.latitude * (math.pi / 180.0)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    return r * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)));
+  }
+
+  bool _matchesCategory(DealItem deal, String category) {
+    if (category == 'Tous') return true;
+
+    final dealCategory = deal.category.toLowerCase();
+    final target = category.toLowerCase();
+
+    if (dealCategory.contains(target)) return true;
+
+    final text =
+        "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
+
+    switch (category) {
+      case 'Boulangerie':
+        return text.contains('boulang') ||
+            text.contains('patiss') ||
+            text.contains('pâtiss') ||
+            text.contains('pain') ||
+            text.contains('croissant') ||
+            text.contains('viennoiserie') ||
+            text.contains('bakery');
+      case 'Restaurant':
+        return text.contains('restau') ||
+            text.contains('food') ||
+            text.contains('plat') ||
+            text.contains('repas') ||
+            text.contains('traiteur') ||
+            text.contains('snack') ||
+            text.contains('café') ||
+            text.contains('cafe') ||
+            text.contains('burger') ||
+            text.contains('pizza') ||
+            text.contains('tajine') ||
+            text.contains('couscous');
+      case 'Épicerie':
+        return text.contains('épicer') ||
+            text.contains('epicer') ||
+            text.contains('supermarch') ||
+            text.contains('grocery') ||
+            text.contains('primeur') ||
+            text.contains('fruit') ||
+            text.contains('légume') ||
+            text.contains('alimentation');
+      case 'Fleuriste':
+        return text.contains('fleur') ||
+            text.contains('florist') ||
+            text.contains('plante') ||
+            text.contains('bouquet');
+      default:
+        return dealCategory.contains(target);
+    }
+  }
+
+  bool _matchesQuartier(DealItem deal, String quartier) {
+    if (quartier == 'Tous') return true;
+
+    final q = quartier.toLowerCase();
+    final location = deal.location.toLowerCase();
+    final business = deal.businessName.toLowerCase();
+    final title = deal.title.toLowerCase();
+
+    return location.contains(q) || business.contains(q) || title.contains(q);
+  }
+
+  bool _matchesSearch(DealItem deal, String query) {
+    if (query.trim().isEmpty) return true;
+    final q = query.trim().toLowerCase();
+    return deal.title.toLowerCase().contains(q) ||
+        deal.businessName.toLowerCase().contains(q) ||
+        deal.location.toLowerCase().contains(q) ||
+        deal.category.toLowerCase().contains(q);
+  }
+
+  List<DealItem> _applyFiltersAndSort(List<DealItem> allDeals) {
+    final filtered = allDeals.where((deal) {
+      final matchesCat = _matchesCategory(deal, _selectedCategory);
+      final matchesQ = _matchesQuartier(deal, _selectedQuartier);
+      final matchesS = _matchesSearch(deal, _searchQuery);
+      return matchesCat && matchesQ && matchesS;
+    }).toList();
+
+    switch (_sortOption) {
+      case FeedSortOption.distance:
+        filtered.sort((a, b) =>
+            _getDealDistanceKm(a).compareTo(_getDealDistanceKm(b)));
+        break;
+      case FeedSortOption.expiration:
+        filtered.sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
+        break;
+      case FeedSortOption.recent:
+        // Garde l'ordre de création par défaut
+        break;
+    }
+
+    return filtered;
+  }
+
+  int get _activeFiltersCount {
+    int count = 0;
+    if (_searchQuery.trim().isNotEmpty) count++;
+    if (_selectedCategory != 'Tous') count++;
+    if (_selectedQuartier != 'Tous') count++;
+    if (_sortOption != FeedSortOption.distance) count++;
+    return count;
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _selectedCategory = 'Tous';
+      _selectedQuartier = 'Tous';
+      _sortOption = FeedSortOption.distance;
+    });
   }
 
   void _handleBookRequest(DealItem deal) {
@@ -992,27 +1164,23 @@ class _FeedViewState extends State<FeedView> {
     final code = (100000 + math.Random().nextInt(900000)).toString();
 
     try {
-      // 1. Décrémenter le compteur du deal
       await supabase
           .from('deals')
           .update({'remaining_count': deal.remainingCount - 1})
           .eq('id', deal.id);
 
-      // 2. Insérer dans bookings (sans user_id, la colonne n'existe pas dans ce schéma)
       await supabase.from('bookings').insert({
         'deal_id': deal.id,
         'pass_code': code,
         'status': 'reserve',
       });
 
-      // 3. Sauvegarder le pass_code localement pour que MyPassesScreen puisse le retrouver
       final prefs = await SharedPreferences.getInstance();
       final existingJson = prefs.getString('my_pass_codes_${user.id}') ?? '[]';
       final List<dynamic> existing = jsonDecode(existingJson);
       existing.add(code);
       await prefs.setString('my_pass_codes_${user.id}', jsonEncode(existing));
 
-      // 4. Insérer dans passes (compatibilité secondaire — erreurs ignorées)
       try {
         await supabase.from('passes').insert({
           'deal_id': deal.id,
@@ -1042,7 +1210,6 @@ class _FeedViewState extends State<FeedView> {
       _refresh();
     } catch (e) {
       if (!mounted) return;
-      // Si l'insert bookings échoue, on réincrémente le compteur pour éviter une perte
       try {
         await supabase
             .from('deals')
@@ -1059,92 +1226,564 @@ class _FeedViewState extends State<FeedView> {
     }
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+          border: Border.all(color: BarakaColors.border.withValues(alpha: 0.7)),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (val) => setState(() => _searchQuery = val),
+          decoration: InputDecoration(
+            hintText: "Rechercher à Marrakech (pain, tajine, fleurs...)",
+            hintStyle: TextStyle(
+              color: BarakaColors.textSecondary.withValues(alpha: 0.8),
+              fontSize: 13,
+            ),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: BarakaColors.primary,
+              size: 22,
+            ),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    color: Colors.grey,
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategorySelector() {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: _categories.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final cat = _categories[index];
+          final label = cat['label'] as String;
+          final icon = cat['icon'] as IconData;
+          final isSelected = _selectedCategory == label;
+
+          return ChoiceChip(
+            selected: isSelected,
+            showCheckmark: false,
+            avatar: Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : BarakaColors.primary,
+            ),
+            label: Text(
+              label,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12.5,
+                color: isSelected ? Colors.white : BarakaColors.textPrimary,
+              ),
+            ),
+            selectedColor: BarakaColors.primary,
+            backgroundColor: Colors.white,
+            side: BorderSide(
+              color: isSelected ? BarakaColors.primary : BarakaColors.border,
+              width: 1.2,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            onSelected: (_) {
+              setState(() {
+                _selectedCategory = label;
+              });
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFilterAndSortBar(int totalResults) {
+    final hasActiveFilters = _activeFiltersCount > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      child: Row(
+        children: [
+          // Sélecteur de quartier
+          Expanded(
+            child: PopupMenuButton<String>(
+              tooltip: "Sélectionner un quartier",
+              initialValue: _selectedQuartier,
+              onSelected: (quartier) {
+                setState(() => _selectedQuartier = quartier);
+              },
+              itemBuilder: (context) => _quartiers.map((q) {
+                final isQSelected = _selectedQuartier == q;
+                return PopupMenuItem<String>(
+                  value: q,
+                  child: Row(
+                    children: [
+                      Icon(
+                        q == 'Tous' ? Icons.location_city : Icons.place,
+                        size: 18,
+                        color: isQSelected ? BarakaColors.primary : Colors.grey,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        q == 'Tous' ? 'Tous les quartiers' : q,
+                        style: TextStyle(
+                          fontWeight:
+                              isQSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isQSelected
+                              ? BarakaColors.primary
+                              : Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _selectedQuartier != 'Tous'
+                      ? BarakaColors.primary.withValues(alpha: 0.1)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedQuartier != 'Tous'
+                        ? BarakaColors.primary
+                        : BarakaColors.border,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: _selectedQuartier != 'Tous'
+                          ? BarakaColors.primary
+                          : BarakaColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        _selectedQuartier == 'Tous'
+                            ? "Quartier"
+                            : _selectedQuartier,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: _selectedQuartier != 'Tous'
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: _selectedQuartier != 'Tous'
+                              ? BarakaColors.primary
+                              : BarakaColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down_rounded,
+                        size: 16, color: Colors.grey),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Sélecteur de tri (Distance GPS, Expiration, Récents)
+          PopupMenuButton<FeedSortOption>(
+            tooltip: "Trier les offres",
+            initialValue: _sortOption,
+            onSelected: (opt) {
+              setState(() => _sortOption = opt);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: FeedSortOption.distance,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.near_me_rounded,
+                      size: 18,
+                      color: _sortOption == FeedSortOption.distance
+                          ? BarakaColors.primary
+                          : Colors.grey,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Distance GPS (plus proche)",
+                      style: TextStyle(
+                        fontWeight: _sortOption == FeedSortOption.distance
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _sortOption == FeedSortOption.distance
+                            ? BarakaColors.primary
+                            : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: FeedSortOption.expiration,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 18,
+                      color: _sortOption == FeedSortOption.expiration
+                          ? BarakaColors.terracotta
+                          : Colors.grey,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Expire bientôt (urgent)",
+                      style: TextStyle(
+                        fontWeight: _sortOption == FeedSortOption.expiration
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _sortOption == FeedSortOption.expiration
+                            ? BarakaColors.terracotta
+                            : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: FeedSortOption.recent,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 18,
+                      color: _sortOption == FeedSortOption.recent
+                          ? BarakaColors.primary
+                          : Colors.grey,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Plus récents",
+                      style: TextStyle(
+                        fontWeight: _sortOption == FeedSortOption.recent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _sortOption == FeedSortOption.recent
+                            ? BarakaColors.primary
+                            : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: BarakaColors.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _sortOption == FeedSortOption.distance
+                        ? Icons.near_me_outlined
+                        : (_sortOption == FeedSortOption.expiration
+                            ? Icons.timer_outlined
+                            : Icons.auto_awesome_rounded),
+                    size: 16,
+                    color: _sortOption == FeedSortOption.expiration
+                        ? BarakaColors.terracotta
+                        : BarakaColors.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _sortOption == FeedSortOption.distance
+                        ? "Distance"
+                        : (_sortOption == FeedSortOption.expiration
+                            ? "Expiration"
+                            : "Récents"),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: BarakaColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.keyboard_arrow_down_rounded,
+                      size: 16, color: Colors.grey),
+                ],
+              ),
+            ),
+          ),
+
+          // Bouton reset si filtres actifs
+          if (hasActiveFilters) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: "Réinitialiser les filtres",
+              onPressed: _resetFilters,
+              icon: Badge(
+                label: Text('$_activeFiltersCount'),
+                backgroundColor: BarakaColors.terracotta,
+                child: const Icon(
+                  Icons.filter_alt_off_rounded,
+                  size: 20,
+                  color: BarakaColors.terracotta,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultsBanner(int count) {
+    String locationLabel = _selectedQuartier == 'Tous'
+        ? "à Marrakech"
+        : "à $_selectedQuartier";
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "$count panier${count > 1 ? 's' : ''} $locationLabel",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: BarakaColors.textSecondary.withValues(alpha: 0.9),
+            ),
+          ),
+          if (_sortOption == FeedSortOption.distance)
+            const Row(
+              children: [
+                Icon(Icons.gps_fixed, size: 11, color: BarakaColors.primary),
+                SizedBox(width: 4),
+                Text(
+                  "Plus proche d'abord",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: BarakaColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            )
+          else if (_sortOption == FeedSortOption.expiration)
+            const Row(
+              children: [
+                Icon(Icons.timer_outlined,
+                    size: 11, color: BarakaColors.terracotta),
+                SizedBox(width: 4),
+                Text(
+                  "Urgent d'abord",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: BarakaColors.terracotta,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: BarakaColors.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 52,
+                color: BarakaColors.primary,
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              "Aucun bon plan trouvé",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: BarakaColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _activeFiltersCount > 0
+                  ? "Aucune offre ne correspond à vos filtres actuels.\nEssayez de modifier votre quartier ou catégorie."
+                  : "Revenez un peu plus tard pour découvrir de nouvelles offres.",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: BarakaColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            if (_activeFiltersCount > 0) ...[
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _resetFilters,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text("Réinitialiser tous les filtres"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: BarakaColors.primary,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<DealItem>>(
       future: _dealsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Column(
+            children: [
+              _buildSearchBar(),
+              _buildCategorySelector(),
+              _buildFilterAndSortBar(0),
+              const Expanded(
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ],
+          );
         }
         if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Erreur : ${snapshot.error}",
-                    style: const TextStyle(color: Colors.red),
+          return Column(
+            children: [
+              _buildSearchBar(),
+              _buildCategorySelector(),
+              _buildFilterAndSortBar(0),
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Erreur : ${snapshot.error}",
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: _refresh,
+                          child: const Text("Réessayer"),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _refresh,
-                    child: const Text("Réessayer"),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         }
 
-        final deals = snapshot.data ?? [];
-        if (deals.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.sentiment_dissatisfied,
-                  size: 50,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "Aucun bon plan disponible pour l'instant.",
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: _refresh,
-                  child: const Text("Actualiser"),
-                ),
-              ],
-            ),
-          );
-        }
+        final allDeals = snapshot.data ?? [];
+        final filteredDeals = _applyFiltersAndSort(allDeals);
 
         return RefreshIndicator(
           onRefresh: () async => _refresh(),
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            itemCount: deals.length,
-            itemBuilder: (context, i) {
-              final deal = deals[i];
-              return DealCardWidget(
-                deal: deal,
-                userLat: widget.userLat,
-                userLng: widget.userLng,
-                onTap: () {
-                  // Clic carte : Voir les détails (accessible à tous sans connexion)
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DealDetailPage(
-                        deal: deal,
-                        userLat: widget.userLat,
-                        userLng: widget.userLng,
-                        onBook: () => _handleBookRequest(deal),
-                        onToggleFavorite: () => _handleFavoriteToggle(deal),
+          child: Column(
+            children: [
+              _buildSearchBar(),
+              _buildCategorySelector(),
+              _buildFilterAndSortBar(filteredDeals.length),
+              if (filteredDeals.isNotEmpty)
+                _buildResultsBanner(filteredDeals.length),
+              Expanded(
+                child: filteredDeals.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        itemCount: filteredDeals.length,
+                        itemBuilder: (context, i) {
+                          final deal = filteredDeals[i];
+                          return DealCardWidget(
+                            deal: deal,
+                            userLat: widget.userLat,
+                            userLng: widget.userLng,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DealDetailPage(
+                                    deal: deal,
+                                    userLat: widget.userLat,
+                                    userLng: widget.userLng,
+                                    onBook: () => _handleBookRequest(deal),
+                                    onToggleFavorite: () =>
+                                        _handleFavoriteToggle(deal),
+                                  ),
+                                ),
+                              );
+                            },
+                            onBook: () => _handleBookRequest(deal),
+                            onToggleFavorite: () => _handleFavoriteToggle(deal),
+                          );
+                        },
                       ),
-                    ),
-                  );
-                },
-                onBook: () => _handleBookRequest(deal),
-                onToggleFavorite: () => _handleFavoriteToggle(deal),
-              );
-            },
+              ),
+            ],
           ),
         );
       },
@@ -1212,6 +1851,25 @@ class _DealCardWidgetState extends State<DealCardWidget> {
             math.sin(dLon / 2) *
             math.sin(dLon / 2);
     return r * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)));
+  }
+
+  IconData _getCategoryIcon(String cat) {
+    final c = cat.toLowerCase();
+    if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
+      return Icons.bakery_dining_rounded;
+    }
+    if (c.contains('restau') || c.contains('food') || c.contains('plat')) {
+      return Icons.restaurant_rounded;
+    }
+    if (c.contains('épicer') ||
+        c.contains('epicer') ||
+        c.contains('supermarch')) {
+      return Icons.local_grocery_store_rounded;
+    }
+    if (c.contains('fleur') || c.contains('plante')) {
+      return Icons.local_florist_rounded;
+    }
+    return Icons.local_offer_outlined;
   }
 
   @override
@@ -1329,23 +1987,98 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        widget.deal.businessName.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade600,
-                        ),
+                      Wrap(
+                        spacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: BarakaColors.sageLight,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getCategoryIcon(widget.deal.category),
+                                  size: 12,
+                                  color: BarakaColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  widget.deal.category,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: BarakaColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 12,
+                                  color: BarakaColors.textSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  widget.deal.location,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: BarakaColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        "${_getDistanceKm().toStringAsFixed(1)} km",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: BarakaColors.primary,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.near_me_outlined,
+                            size: 12,
+                            color: BarakaColors.primary,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            "${_getDistanceKm().toStringAsFixed(1)} km",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: BarakaColors.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.deal.businessName.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -2029,6 +2762,7 @@ class _MerchantViewState extends State<MerchantView> {
   final _origCtrl = TextEditingController();
   final _discCtrl = TextEditingController();
   final _stockCtrl = TextEditingController(text: "5");
+  String _category = 'Boulangerie';
   bool _loading = false;
 
   Future<void> _publish() async {
@@ -2061,6 +2795,7 @@ class _MerchantViewState extends State<MerchantView> {
         'discounted_price': discounted,
         'remaining_count': stock,
         'location': _locCtrl.text.trim(),
+        'category': _category,
         'latitude': 31.6346,
         'longitude': -8.0125,
         'image_url':
@@ -2122,10 +2857,39 @@ class _MerchantViewState extends State<MerchantView> {
             ),
           ),
           const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _category,
+            decoration: const InputDecoration(
+              labelText: "Catégorie",
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(
+                value: 'Boulangerie',
+                child: Text('🥖 Boulangerie'),
+              ),
+              DropdownMenuItem(
+                value: 'Restaurant',
+                child: Text('🍽️ Restaurant'),
+              ),
+              DropdownMenuItem(
+                value: 'Épicerie',
+                child: Text('🛒 Épicerie'),
+              ),
+              DropdownMenuItem(
+                value: 'Fleuriste',
+                child: Text('💐 Fleuriste'),
+              ),
+            ],
+            onChanged: (val) {
+              if (val != null) setState(() => _category = val);
+            },
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _locCtrl,
             decoration: const InputDecoration(
-              labelText: "Quartier",
+              labelText: "Quartier (ex: Guéliz, Médina...)",
               border: OutlineInputBorder(),
             ),
           ),
