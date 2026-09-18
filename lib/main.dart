@@ -2319,6 +2319,13 @@ class _EstablishmentGroupWidgetState extends State<EstablishmentGroupWidget> {
     return Icons.local_offer_outlined;
   }
 
+  String get _coverImageUrl {
+    for (final d in widget.group.deals) {
+      if (d.imageUrl.trim().isNotEmpty) return d.imageUrl.trim();
+    }
+    return '';
+  }
+
   double get _minPrice => widget.group.deals.isEmpty
       ? 0.0
       : widget.group.deals.map((d) => d.discountedPrice).reduce(math.min);
@@ -2326,6 +2333,50 @@ class _EstablishmentGroupWidgetState extends State<EstablishmentGroupWidget> {
   int get _maxDiscount => widget.group.deals.isEmpty
       ? 0
       : widget.group.deals.map((d) => d.discountPercentage).reduce(math.max);
+
+  Widget _buildCoverImageFallback() {
+    return Container(
+      height: 165,
+      width: double.infinity,
+      color: BarakaColors.sageLight,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                gradient: BarakaColors.primaryGradient,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: BarakaColors.primary.withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _getCategoryIcon(widget.group.category),
+                size: 28,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.group.businessName,
+              style: const TextStyle(
+                color: BarakaColors.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2351,155 +2402,117 @@ class _EstablishmentGroupWidgetState extends State<EstablishmentGroupWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Case cliquable de l'établissement pour afficher/masquer les offres
+            // Case cliquable de l'établissement avec photo de couverture
             InkWell(
               onTap: () {
                 setState(() {
                   _isExpanded = !_isExpanded;
                 });
               },
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                decoration: BoxDecoration(
-                  color: _isExpanded
-                      ? BarakaColors.sageLight.withValues(alpha: 0.35)
-                      : Colors.white,
-                  border: _isExpanded
-                      ? const Border(
-                          bottom: BorderSide(
-                            color: Color(0xFFF0F0EB),
-                            width: 1,
-                          ),
-                        )
-                      : null,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        // Icône storefront moderne
-                        Container(
-                          width: 44,
-                          height: 44,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image de couverture avec badges superposés
+                  Stack(
+                    children: [
+                      _coverImageUrl.isNotEmpty
+                          ? Image.network(
+                              _coverImageUrl,
+                              height: 165,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildCoverImageFallback(),
+                            )
+                          : _buildCoverImageFallback(),
+
+                      // Dégradé sombre pour lisibilité des badges
+                      Positioned.fill(
+                        child: Container(
                           decoration: BoxDecoration(
-                            gradient: BarakaColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(14),
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.3),
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.65),
+                              ],
+                              stops: const [0.0, 0.45, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // Badge Catégorie (Haut Gauche)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    BarakaColors.primary.withValues(alpha: 0.28),
-                                blurRadius: 8,
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.storefront_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-
-                        // Informations Établissement
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                widget.group.businessName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: BarakaColors.textPrimary,
-                                  letterSpacing: -0.3,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              Icon(
+                                _getCategoryIcon(widget.group.category),
+                                size: 12,
+                                color: BarakaColors.primary,
                               ),
-                              const SizedBox(height: 3),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: BarakaColors.sageLight,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          _getCategoryIcon(
-                                            widget.group.category,
-                                          ),
-                                          size: 11,
-                                          color: BarakaColors.primary,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          widget.group.category,
-                                          style: const TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: BarakaColors.primary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  const Icon(
-                                    Icons.place_outlined,
-                                    size: 12,
-                                    color: BarakaColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 2),
-                                  Flexible(
-                                    child: Text(
-                                      "${widget.group.location} • ${distanceKm.toStringAsFixed(1)} km",
-                                      style: const TextStyle(
-                                        fontSize: 11.5,
-                                        color: BarakaColors.textSecondary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.group.category,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: BarakaColors.primary,
+                                ),
                               ),
                             ],
                           ),
                         ),
+                      ),
 
-                        // Badge du nombre d'offres
-                        Container(
+                      // Badge Nombre d'offres (Haut Droite)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
-                            vertical: 6,
+                            vertical: 5.5,
                           ),
                           decoration: BoxDecoration(
                             gradient: hasMultiple
                                 ? BarakaColors.terracottaGradient
                                 : null,
-                            color: hasMultiple ? null : BarakaColors.sageLight,
+                            color: hasMultiple
+                                ? null
+                                : Colors.white.withValues(alpha: 0.94),
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: hasMultiple
-                                ? [
-                                    BoxShadow(
-                                      color: BarakaColors.terracotta
-                                          .withValues(alpha: 0.35),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (hasMultiple
+                                        ? BarakaColors.terracotta
+                                        : Colors.black)
+                                    .withValues(alpha: 0.25),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Text(
                             hasMultiple
@@ -2514,21 +2527,205 @@ class _EstablishmentGroupWidgetState extends State<EstablishmentGroupWidget> {
                             ),
                           ),
                         ),
-                      ],
+                      ),
+
+                      // Badge Distance GPS (Bas Droite)
+                      Positioned(
+                        bottom: 10,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.place_outlined,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                "${distanceKm.toStringAsFixed(1)} km",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Badge Réduction Max si disponible (Bas Gauche)
+                      if (_maxDiscount > 0)
+                        Positioned(
+                          bottom: 10,
+                          left: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: BarakaColors.terracottaGradient,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: BarakaColors.terracotta
+                                      .withValues(alpha: 0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              "Jusqu'à -$_maxDiscount%",
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  // Zone d'informations de l'établissement sous l'image
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                    decoration: BoxDecoration(
+                      color: _isExpanded
+                          ? BarakaColors.sageLight.withValues(alpha: 0.35)
+                          : Colors.white,
+                      border: _isExpanded
+                          ? const Border(
+                              bottom: BorderSide(
+                                color: Color(0xFFF0F0EB),
+                                width: 1,
+                              ),
+                            )
+                          : null,
                     ),
-
-                    const SizedBox(height: 10),
-
-                    // Barre d'invitation au clic
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.group.businessName,
+                                    style: const TextStyle(
+                                      fontSize: 16.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: BarakaColors.textPrimary,
+                                      letterSpacing: -0.3,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.place_outlined,
+                                        size: 13,
+                                        color: BarakaColors.textSecondary,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Flexible(
+                                        child: Text(
+                                          widget.group.location,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: BarakaColors.textSecondary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+
+                            // Bouton / Pillule interactif d'ouverture
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _isExpanded
+                                    ? Colors.grey.shade100
+                                    : BarakaColors.primary
+                                        .withValues(alpha: 0.09),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _isExpanded
+                                      ? Colors.grey.shade300
+                                      : BarakaColors.primary
+                                          .withValues(alpha: 0.25),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _isExpanded
+                                        ? (widget.group.deals.length > 1
+                                            ? "Masquer les offres"
+                                            : "Masquer l'offre")
+                                        : (widget.group.deals.length > 1
+                                            ? "Voir les offres (${widget.group.deals.length})"
+                                            : "Voir l'offre"),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: _isExpanded
+                                          ? BarakaColors.textSecondary
+                                          : BarakaColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _isExpanded
+                                        ? Icons.keyboard_arrow_up_rounded
+                                        : Icons.keyboard_arrow_down_rounded,
+                                    size: 18,
+                                    color: _isExpanded
+                                        ? BarakaColors.textSecondary
+                                        : BarakaColors.primary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Prix d'appel
                         Row(
                           children: [
                             Text(
                               "Dès ${_minPrice.toStringAsFixed(0)} MAD",
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: 13.5,
                                 fontWeight: FontWeight.w800,
                                 color: BarakaColors.primary,
                               ),
@@ -2556,51 +2753,10 @@ class _EstablishmentGroupWidgetState extends State<EstablishmentGroupWidget> {
                             ],
                           ],
                         ),
-
-                        // Bouton / Pillule interactif d'ouverture
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _isExpanded
-                                ? Colors.grey.shade100
-                                : BarakaColors.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                _isExpanded
-                                    ? "Masquer les offres"
-                                    : "Voir les offres (${widget.group.deals.length})",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: _isExpanded
-                                      ? BarakaColors.textSecondary
-                                      : BarakaColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Icon(
-                                _isExpanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
-                                size: 17,
-                                color: _isExpanded
-                                    ? BarakaColors.textSecondary
-                                    : BarakaColors.primary,
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 

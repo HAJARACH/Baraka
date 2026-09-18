@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:baraka_app/main.dart';
 
@@ -465,6 +466,86 @@ void main() {
       expect(groups.length, 2);
       expect(groups[0].businessName, 'Fleuriste Jasmin');
       expect(groups[1].businessName, 'Pâtisserie Amandine');
+    });
+
+    testWidgets('EstablishmentGroupWidget renders pro card with cover image and toggles deals on tap',
+        (tester) async {
+      final now = DateTime.now();
+      final group = EstablishmentGroup(
+        businessName: 'Boulangerie Amine',
+        location: 'Maârif, Casablanca',
+        latitude: 33.5898,
+        longitude: -7.6038,
+        category: 'Boulangerie',
+        deals: [
+          DealItem(
+            id: 'd1',
+            title: 'Panier Croissants',
+            businessName: 'Boulangerie Amine',
+            originalPrice: 40,
+            discountedPrice: 20,
+            remainingCount: 2,
+            location: 'Maârif, Casablanca',
+            latitude: 33.5898,
+            longitude: -7.6038,
+            imageUrl: '',
+            expiresAt: now.add(const Duration(hours: 2)),
+            category: 'Boulangerie',
+          ),
+          DealItem(
+            id: 'd2',
+            title: 'Baguettes traditionnelles',
+            businessName: 'Boulangerie Amine',
+            originalPrice: 20,
+            discountedPrice: 10,
+            remainingCount: 5,
+            location: 'Maârif, Casablanca',
+            latitude: 33.5898,
+            longitude: -7.6038,
+            imageUrl: '',
+            expiresAt: now.add(const Duration(hours: 3)),
+            category: 'Boulangerie',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: EstablishmentGroupWidget(
+                group: group,
+                userLat: 33.5898,
+                userLng: -7.6038,
+                onSelectDeal: (_) {},
+                onBookDeal: (_) {},
+                onToggleFavorite: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Verify business name, category and "Voir les offres (2)" are rendered
+      expect(find.text('Boulangerie Amine'), findsAtLeastNWidgets(1));
+      expect(find.text('Voir les offres (2)'), findsOneWidget);
+      expect(find.text('🔥 2 offres'), findsOneWidget);
+      expect(find.text('Dès 10 MAD'), findsOneWidget);
+
+      // Tap on the pro case to expand deals
+      await tester.tap(find.text('Voir les offres (2)'));
+      await tester.pumpAndSettle();
+
+      // Now it should be expanded
+      expect(find.text('Masquer les offres'), findsOneWidget);
+      expect(find.text('Panier Croissants'), findsOneWidget);
+      expect(find.text('Baguettes traditionnelles'), findsOneWidget);
+
+      // Tap again to collapse
+      await tester.tap(find.text('Masquer les offres'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Voir les offres (2)'), findsOneWidget);
     });
   });
 }
