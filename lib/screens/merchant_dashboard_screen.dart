@@ -173,7 +173,6 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
     final user = supabase.auth.currentUser;
 
     try {
-      final discountPct = (((orig - disc) / orig) * 100).round();
       final defaultImg = _categoryImages[_selectedCategory] ??
           'https://images.unsplash.com/photo-1541544741938-0af808871cc0';
 
@@ -185,7 +184,6 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         'longitude': -7.9811,
         'original_price': orig,
         'discounted_price': disc,
-        'discount_percentage': discountPct,
         'image_url': img.isNotEmpty ? img : defaultImg,
         'category': _selectedCategory,
         'remaining_count': stock,
