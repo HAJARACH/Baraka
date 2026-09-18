@@ -170,7 +170,6 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
     }
 
     setState(() => _isPublishing = true);
-    final user = supabase.auth.currentUser;
 
     try {
       final defaultImg = _categoryImages[_selectedCategory] ??
@@ -189,7 +188,6 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         'remaining_count': stock,
         'expires_at':
             DateTime.now().add(const Duration(days: 3)).toIso8601String(),
-        if (user != null) 'merchant_id': user.id,
       });
 
       if (!mounted) return;
