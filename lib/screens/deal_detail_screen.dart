@@ -190,60 +190,100 @@ class _DealDetailScreenState extends State<DealDetailScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              if (widget.onToggleFavorite != null) ...[
-                ValueListenableBuilder<Set<String>>(
-                  valueListenable: FavoritesService.instance.favoritesNotifier,
-                  builder: (context, favs, _) {
-                    final isFav = favs.contains(deal.id);
-                    return OutlinedButton.icon(
-                      onPressed: widget.onToggleFavorite,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: isFav ? BarakaColors.terracotta : BarakaColors.textPrimary,
-                        side: BorderSide(
-                          color: isFav ? BarakaColors.terracotta : BarakaColors.border,
-                          width: 1.5,
+              // Quantité restante juste au-dessus du bouton
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: deal.remainingCount <= 2
+                              ? BarakaColors.terracotta
+                              : BarakaColors.primary,
+                          shape: BoxShape.circle,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        deal.remainingCount > 0
+                            ? "${deal.remainingCount} restant${deal.remainingCount > 1 ? 's' : ''}"
+                            : "Épuisé",
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: deal.remainingCount <= 2
+                              ? BarakaColors.terracotta
+                              : BarakaColors.primaryDark,
                         ),
                       ),
-                      icon: Icon(
-                        isFav ? Icons.favorite : Icons.favorite_border,
-                        size: 20,
-                        color: isFav ? BarakaColors.terracotta : null,
-                      ),
-                      label: Text(
-                        isFav ? "Favori" : "Enregistrer",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: (deal.remainingCount <= 0 || _isLoading) ? null : _handleBooking,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BarakaColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ],
                   ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Text(
-                          "Bloquer ce bon plan",
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
                 ),
+              ),
+              Row(
+                children: [
+                  if (widget.onToggleFavorite != null) ...[
+                    ValueListenableBuilder<Set<String>>(
+                      valueListenable: FavoritesService.instance.favoritesNotifier,
+                      builder: (context, favs, _) {
+                        final isFav = favs.contains(deal.id);
+                        return OutlinedButton.icon(
+                          onPressed: widget.onToggleFavorite,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: isFav ? BarakaColors.terracotta : BarakaColors.textPrimary,
+                            side: BorderSide(
+                              color: isFav ? BarakaColors.terracotta : BarakaColors.border,
+                              width: 1.5,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            size: 20,
+                            color: isFav ? BarakaColors.terracotta : null,
+                          ),
+                          label: Text(
+                            isFav ? "Favori" : "Enregistrer",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: (deal.remainingCount <= 0 || _isLoading) ? null : _handleBooking,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BarakaColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text(
+                              "Réserver ce bon plan",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

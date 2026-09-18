@@ -343,7 +343,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Échec du blocage : $e"),
+          content: Text("Échec de la réservation : $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -724,7 +724,7 @@ class _MainHomeScreenState extends State<MainHomeScreen> {
       );
     }
 
-    // Onglet 1 : Favoris (Sauvegardés sans forcément bloquer)
+    // Onglet 1 : Favoris (Sauvegardés sans forcément réserver)
     if (_currentIndex == 1) {
       return FavoritesScreen(
         userLat: _userLat,
@@ -1413,7 +1413,7 @@ class _FeedViewState extends State<FeedView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Échec du blocage : $e"),
+          content: Text("Échec de la réservation : $e"),
           backgroundColor: Colors.red,
         ),
       );
@@ -2654,66 +2654,104 @@ class _DealCardWidgetState extends State<DealCardWidget> {
                           ],
                         ),
 
-                        // Bouton d'action à dégradé émeraude
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: widget.deal.remainingCount > 0
-                                ? BarakaColors.primaryGradient
-                                : null,
-                            color: widget.deal.remainingCount > 0
-                                ? null
-                                : Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: widget.deal.remainingCount > 0
-                                ? [
-                                    BoxShadow(
-                                      color: BarakaColors.primary
-                                          .withValues(alpha: 0.28),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: widget.deal.remainingCount > 0
-                                  ? widget.onBook
-                                  : null,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
+                        // Colonne : Quantité restante au-dessus + Bouton Réserver
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Quantité restante affichée au-dessus du bouton
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: widget.deal.remainingCount <= 2
+                                        ? BarakaColors.terracotta
+                                        : BarakaColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      widget.deal.remainingCount > 0
-                                          ? Icons.shopping_bag_outlined
-                                          : Icons.block_rounded,
-                                      size: 15,
-                                      color: Colors.white,
+                                const SizedBox(width: 4),
+                                Text(
+                                  widget.deal.remainingCount > 0
+                                      ? "${widget.deal.remainingCount} restant${widget.deal.remainingCount > 1 ? 's' : ''}"
+                                      : "Épuisé",
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: widget.deal.remainingCount <= 2
+                                        ? BarakaColors.terracotta
+                                        : BarakaColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+
+                            // Bouton Réserver
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: widget.deal.remainingCount > 0
+                                    ? BarakaColors.primaryGradient
+                                    : null,
+                                color: widget.deal.remainingCount > 0
+                                    ? null
+                                    : Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: widget.deal.remainingCount > 0
+                                    ? [
+                                        BoxShadow(
+                                          color: BarakaColors.primary
+                                              .withValues(alpha: 0.28),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: widget.deal.remainingCount > 0
+                                      ? widget.onBook
+                                      : null,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 9,
                                     ),
-                                    const SizedBox(width: 5),
-                                    Text(
-                                      widget.deal.remainingCount > 0
-                                          ? "Bloquer (${widget.deal.remainingCount})"
-                                          : "Épuisé",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.1,
-                                      ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          widget.deal.remainingCount > 0
+                                              ? Icons.shopping_bag_outlined
+                                              : Icons.block_rounded,
+                                          size: 15,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          widget.deal.remainingCount > 0
+                                              ? "Réserver"
+                                              : "Épuisé",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.2,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -2871,7 +2909,42 @@ class DealDetailPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
+                  // Indicateur de quantité restante placé au-dessus du bouton
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: deal.remainingCount <= 2
+                                  ? BarakaColors.terracotta
+                                  : BarakaColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            deal.remainingCount > 0
+                                ? "${deal.remainingCount} restant${deal.remainingCount > 1 ? 's' : ''}"
+                                : "Épuisé",
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: deal.remainingCount <= 2
+                                  ? BarakaColors.terracotta
+                                  : BarakaColors.primaryDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   Row(
                     children: [
                       ValueListenableBuilder<Set<String>>(
@@ -2887,8 +2960,8 @@ class DealDetailPage extends StatelessWidget {
                                   : Colors.black87,
                               side: BorderSide(
                                 color: isFav
-                                    ? BarakaColors.terracotta
-                                    : Colors.grey.shade400,
+                                  ? BarakaColors.terracotta
+                                  : Colors.grey.shade400,
                                 width: 1.5,
                               ),
                               padding: const EdgeInsets.symmetric(
@@ -2929,7 +3002,7 @@ class DealDetailPage extends StatelessWidget {
                             ),
                           ),
                           child: const Text(
-                            "Bloquer ce bon plan",
+                            "Réserver ce bon plan",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

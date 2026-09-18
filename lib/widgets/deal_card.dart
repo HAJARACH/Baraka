@@ -11,6 +11,7 @@ class DealCard extends StatefulWidget {
   final double userLat;
   final double userLng;
   final VoidCallback? onToggleFavorite;
+  final VoidCallback? onBook;
 
   const DealCard({
     super.key,
@@ -19,6 +20,7 @@ class DealCard extends StatefulWidget {
     required this.userLat,
     required this.userLng,
     this.onToggleFavorite,
+    this.onBook,
   });
 
   @override
@@ -323,24 +325,105 @@ class _DealCardState extends State<DealCard> {
                             ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: widget.deal.remainingCount <= 2
-                                ? BarakaColors.terracottaLight
-                                : BarakaColors.sageLight,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            "${widget.deal.remainingCount} restant${widget.deal.remainingCount > 1 ? 's' : ''}",
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: widget.deal.remainingCount <= 2
-                                  ? BarakaColors.terracottaDark
-                                  : BarakaColors.primaryDark,
+                        // Colonne : Quantité restante au-dessus + Bouton Réserver
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Quantité restante affichée au-dessus du bouton
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: widget.deal.remainingCount <= 2
+                                        ? BarakaColors.terracotta
+                                        : BarakaColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  widget.deal.remainingCount > 0
+                                      ? "${widget.deal.remainingCount} restant${widget.deal.remainingCount > 1 ? 's' : ''}"
+                                      : "Épuisé",
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: widget.deal.remainingCount <= 2
+                                        ? BarakaColors.terracotta
+                                        : BarakaColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
+                            const SizedBox(height: 5),
+
+                            // Bouton Réserver
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: (!isExpired && widget.deal.remainingCount > 0)
+                                    ? BarakaColors.primaryGradient
+                                    : null,
+                                color: (!isExpired && widget.deal.remainingCount > 0)
+                                    ? null
+                                    : Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: (!isExpired && widget.deal.remainingCount > 0)
+                                    ? [
+                                        BoxShadow(
+                                          color: BarakaColors.primary.withValues(alpha: 0.28),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: (!isExpired && widget.deal.remainingCount > 0)
+                                      ? (widget.onBook ?? widget.onTap)
+                                      : null,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 10,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          (!isExpired && widget.deal.remainingCount > 0)
+                                              ? Icons.shopping_bag_outlined
+                                              : Icons.block_rounded,
+                                          size: 15,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          isExpired
+                                              ? "Expiré"
+                                              : (widget.deal.remainingCount > 0
+                                                  ? "Réserver"
+                                                  : "Épuisé"),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
