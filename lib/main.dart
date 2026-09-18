@@ -124,6 +124,29 @@ class DealItem {
 }
 
 // -------------------------------------------------------------
+// Modèle Groupe Établissement (Multi-offres)
+// -------------------------------------------------------------
+class EstablishmentGroup {
+  final String businessName;
+  final String location;
+  final double latitude;
+  final double longitude;
+  final String category;
+  final List<DealItem> deals;
+
+  EstablishmentGroup({
+    required this.businessName,
+    required this.location,
+    required this.latitude,
+    required this.longitude,
+    required this.category,
+    required this.deals,
+  });
+
+  int get totalRemaining => deals.fold(0, (sum, d) => sum + d.remainingCount);
+}
+
+// -------------------------------------------------------------
 // Écran Principal
 // -------------------------------------------------------------
 class MainHomeScreen extends StatefulWidget {
@@ -1289,6 +1312,26 @@ class _FeedViewState extends State<FeedView> {
     return filtered;
   }
 
+  List<EstablishmentGroup> _groupDealsByEstablishment(List<DealItem> deals) {
+    final Map<String, EstablishmentGroup> map = {};
+    for (final deal in deals) {
+      final key = deal.businessName.trim().toLowerCase();
+      if (!map.containsKey(key)) {
+        map[key] = EstablishmentGroup(
+          businessName: deal.businessName.trim(),
+          location: deal.location,
+          latitude: deal.latitude,
+          longitude: deal.longitude,
+          category: deal.category,
+          deals: [deal],
+        );
+      } else {
+        map[key]!.deals.add(deal);
+      }
+    }
+    return map.values.toList();
+  }
+
   int get _activeFiltersCount {
     int count = 0;
     if (_searchQuery.trim().isNotEmpty) count++;
@@ -1925,15 +1968,22 @@ class _FeedViewState extends State<FeedView> {
     );
   }
 
-  Widget _buildResultsBanner(int count) {
+  Widget _buildResultsBanner(int count, {int establishmentCount = 0}) {
     final hasSearch = _searchQuery.trim().isNotEmpty;
     final locationLabel = _selectedQuartier == 'Tous'
         ? "à Marrakech"
         : "à $_selectedQuartier";
 
-    final bannerLabel = hasSearch
-        ? "$count résultat${count > 1 ? 's' : ''} pour « ${_searchQuery.trim()} »"
-        : "$count panier${count > 1 ? 's' : ''} $locationLabel";
+    final String bannerLabel;
+    if (hasSearch) {
+      bannerLabel = establishmentCount > 0
+          ? "$count résultat${count > 1 ? 's' : ''} ($establishmentCount commerce${establishmentCount > 1 ? 's' : ''}) pour « ${_searchQuery.trim()} »"
+          : "$count résultat${count > 1 ? 's' : ''} pour « ${_searchQuery.trim()} »";
+    } else {
+      bannerLabel = establishmentCount > 0
+          ? "$count panier${count > 1 ? 's' : ''} chez $establishmentCount commerce${establishmentCount > 1 ? 's' : ''} $locationLabel"
+          : "$count panier${count > 1 ? 's' : ''} $locationLabel";
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
@@ -2150,6 +2200,7 @@ class _FeedViewState extends State<FeedView> {
 
         final allDeals = snapshot.data ?? [];
         final filteredDeals = _applyFiltersAndSort(allDeals);
+        final establishmentGroups = _groupDealsByEstablishment(filteredDeals);
 
         return RefreshIndicator(
           onRefresh: () async => _refresh(),
@@ -2160,22 +2211,25 @@ class _FeedViewState extends State<FeedView> {
               _buildCategorySelector(),
               _buildFilterAndSortBar(filteredDeals.length),
               if (filteredDeals.isNotEmpty)
-                _buildResultsBanner(filteredDeals.length),
+                _buildResultsBanner(
+                  filteredDeals.length,
+                  establishmentCount: establishmentGroups.length,
+                ),
               Expanded(
-                child: filteredDeals.isEmpty
+                child: establishmentGroups.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(
                         keyboardDismissBehavior:
                             ScrollViewKeyboardDismissBehavior.onDrag,
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: filteredDeals.length,
+                        itemCount: establishmentGroups.length,
                         itemBuilder: (context, i) {
-                          final deal = filteredDeals[i];
-                          return DealCardWidget(
-                            deal: deal,
+                          final group = establishmentGroups[i];
+                          return EstablishmentGroupWidget(
+                            group: group,
                             userLat: widget.userLat,
                             userLng: widget.userLng,
-                            onTap: () {
+                            onSelectDeal: (deal) {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -2190,8 +2244,9 @@ class _FeedViewState extends State<FeedView> {
                                 ),
                               );
                             },
-                            onBook: () => _handleBookRequest(deal),
-                            onToggleFavorite: () => _handleFavoriteToggle(deal),
+                            onBookDeal: (deal) => _handleBookRequest(deal),
+                            onToggleFavorite: (deal) =>
+                                _handleFavoriteToggle(deal),
                           );
                         },
                       ),
@@ -2200,6 +2255,732 @@ class _FeedViewState extends State<FeedView> {
           ),
         );
       },
+    );
+  }
+}
+
+// -------------------------------------------------------------
+// Carte Groupe Établissement (Regroupement Multi-offres)
+// -------------------------------------------------------------
+class EstablishmentGroupWidget extends StatelessWidget {
+  final EstablishmentGroup group;
+  final double userLat;
+  final double userLng;
+  final Function(DealItem) onSelectDeal;
+  final Function(DealItem) onBookDeal;
+  final Function(DealItem) onToggleFavorite;
+
+  const EstablishmentGroupWidget({
+    super.key,
+    required this.group,
+    required this.userLat,
+    required this.userLng,
+    required this.onSelectDeal,
+    required this.onBookDeal,
+    required this.onToggleFavorite,
+  });
+
+  double _getDistanceKm() {
+    const double r = 6371.0;
+    final dLat = (group.latitude - userLat) * (math.pi / 180.0);
+    final dLon = (group.longitude - userLng) * (math.pi / 180.0);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(userLat * (math.pi / 180.0)) *
+            math.cos(group.latitude * (math.pi / 180.0)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    return r * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)));
+  }
+
+  IconData _getCategoryIcon(String cat) {
+    final c = cat.toLowerCase();
+    if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
+      return Icons.bakery_dining_rounded;
+    }
+    if (c.contains('restau') || c.contains('food') || c.contains('plat')) {
+      return Icons.restaurant_rounded;
+    }
+    if (c.contains('épicer') ||
+        c.contains('epicer') ||
+        c.contains('supermarch')) {
+      return Icons.local_grocery_store_rounded;
+    }
+    if (c.contains('fleur') || c.contains('plante')) {
+      return Icons.local_florist_rounded;
+    }
+    return Icons.local_offer_outlined;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final distanceKm = _getDistanceKm();
+    final hasMultiple = group.deals.length > 1;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: hasMultiple
+              ? BarakaColors.primary.withValues(alpha: 0.3)
+              : BarakaColors.border.withValues(alpha: 0.8),
+          width: hasMultiple ? 1.4 : 1.0,
+        ),
+        boxShadow: BarakaColors.cardShadow,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // En-tête Établissement
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            decoration: BoxDecoration(
+              color: hasMultiple
+                  ? BarakaColors.sageLight.withValues(alpha: 0.35)
+                  : Colors.white,
+              border: const Border(
+                bottom: BorderSide(
+                  color: Color(0xFFF0F0EB),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Icône storefront moderne
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    gradient: BarakaColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(13),
+                    boxShadow: [
+                      BoxShadow(
+                        color: BarakaColors.primary.withValues(alpha: 0.28),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.storefront_rounded,
+                      color: Colors.white,
+                      size: 21,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // Informations Établissement
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        group.businessName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: BarakaColors.textPrimary,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: BarakaColors.sageLight,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _getCategoryIcon(group.category),
+                                  size: 11,
+                                  color: BarakaColors.primary,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  group.category,
+                                  style: const TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: BarakaColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.place_outlined,
+                            size: 12,
+                            color: BarakaColors.textSecondary,
+                          ),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              "${group.location} • ${distanceKm.toStringAsFixed(1)} km",
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: BarakaColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Badge du nombre d'offres
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: hasMultiple
+                        ? BarakaColors.terracottaGradient
+                        : null,
+                    color: hasMultiple ? null : BarakaColors.sageLight,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: hasMultiple
+                        ? [
+                            BoxShadow(
+                              color: BarakaColors.terracotta
+                                  .withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    hasMultiple
+                        ? "🔥 ${group.deals.length} offres"
+                        : "1 offre",
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      color: hasMultiple
+                          ? Colors.white
+                          : BarakaColors.primaryDark,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Liste des offres de cet établissement
+          for (int d = 0; d < group.deals.length; d++) ...[
+            if (d > 0)
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFF0F0EB),
+              ),
+            _GroupedDealItemWidget(
+              deal: group.deals[d],
+              dealIndex: d,
+              totalDeals: group.deals.length,
+              onTap: () => onSelectDeal(group.deals[d]),
+              onBook: () => onBookDeal(group.deals[d]),
+              onToggleFavorite: () => onToggleFavorite(group.deals[d]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------
+// Élément d'offre à l'intérieur d'un groupe d'établissement
+// -------------------------------------------------------------
+class _GroupedDealItemWidget extends StatefulWidget {
+  final DealItem deal;
+  final int dealIndex;
+  final int totalDeals;
+  final VoidCallback onTap;
+  final VoidCallback onBook;
+  final VoidCallback onToggleFavorite;
+
+  const _GroupedDealItemWidget({
+    required this.deal,
+    required this.dealIndex,
+    required this.totalDeals,
+    required this.onTap,
+    required this.onBook,
+    required this.onToggleFavorite,
+  });
+
+  @override
+  State<_GroupedDealItemWidget> createState() => _GroupedDealItemWidgetState();
+}
+
+class _GroupedDealItemWidgetState extends State<_GroupedDealItemWidget> {
+  Timer? _timer;
+  Duration _timeLeft = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _update();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _update());
+  }
+
+  void _update() {
+    final diff = widget.deal.expiresAt.difference(DateTime.now());
+    if (mounted) {
+      setState(() => _timeLeft = diff.isNegative ? Duration.zero : diff);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpired = _timeLeft.inSeconds <= 0;
+    final h = _timeLeft.inHours.toString().padLeft(2, '0');
+    final m = (_timeLeft.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (_timeLeft.inSeconds % 60).toString().padLeft(2, '0');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Badge "Offre X sur Y" si plusieurs offres
+            if (widget.totalDeals > 1)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BarakaColors.terracottaLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.local_offer_outlined,
+                            size: 12,
+                            color: BarakaColors.terracottaDark,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            "Offre ${widget.dealIndex + 1} sur ${widget.totalDeals}",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: BarakaColors.terracottaDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: BarakaColors.sageLight,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        widget.deal.category,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: BarakaColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Zone Image avec superpositions
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                14,
+                widget.totalDeals > 1 ? 0 : 12,
+                14,
+                0,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  children: [
+                    Image.network(
+                      widget.deal.imageUrl,
+                      height: widget.totalDeals > 1 ? 155 : 170,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: widget.totalDeals > 1 ? 155 : 170,
+                        color: BarakaColors.sageLight,
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_outlined,
+                            size: 44,
+                            color: BarakaColors.primaryLight,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Dégradé sombre au bas de l'image
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.1),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.65),
+                            ],
+                            stops: const [0.0, 0.45, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Badge Réduction en haut à gauche
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 4.5,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: BarakaColors.terracottaGradient,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: BarakaColors.terracotta
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.bolt_rounded,
+                              color: Colors.white,
+                              size: 13,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              "-${widget.deal.discountPercentage}%",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Bouton Favoris en haut à droite
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: ValueListenableBuilder<Set<String>>(
+                        valueListenable:
+                            FavoritesService.instance.favoritesNotifier,
+                        builder: (context, favs, _) {
+                          final isFav = favs.contains(widget.deal.id);
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: widget.onToggleFavorite,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    isFav
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: isFav
+                                        ? BarakaColors.terracotta
+                                        : BarakaColors.textPrimary,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                    // Décompte de temps en bas à gauche
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isExpired
+                              ? BarakaColors.terracotta.withValues(alpha: 0.9)
+                              : Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 12,
+                              color: Colors.white.withValues(alpha: 0.95),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isExpired ? "Expiré" : "$h:$m:$s",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Contenu textuel et prix
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Titre du panier
+                  Text(
+                    widget.deal.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                      color: BarakaColors.textPrimary,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Ligne de Prix et Bouton Réserver
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            "${widget.deal.discountedPrice.toStringAsFixed(0)} MAD",
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                              color: BarakaColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "${widget.deal.originalPrice.toStringAsFixed(0)} MAD",
+                            style: TextStyle(
+                              fontSize: 13,
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: Colors.grey.shade400,
+                              color: Colors.grey.shade400,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Colonne : Quantité restante au-dessus + Bouton Réserver
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Quantité restante affichée au-dessus du bouton
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: widget.deal.remainingCount <= 2
+                                      ? BarakaColors.terracotta
+                                      : BarakaColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.deal.remainingCount > 0
+                                    ? "${widget.deal.remainingCount} restant${widget.deal.remainingCount > 1 ? 's' : ''}"
+                                    : "Épuisé",
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: widget.deal.remainingCount <= 2
+                                      ? BarakaColors.terracotta
+                                      : BarakaColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+
+                          // Bouton Réserver
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: (!isExpired &&
+                                      widget.deal.remainingCount > 0)
+                                  ? BarakaColors.primaryGradient
+                                  : null,
+                              color: (!isExpired &&
+                                      widget.deal.remainingCount > 0)
+                                  ? null
+                                  : Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: (!isExpired &&
+                                      widget.deal.remainingCount > 0)
+                                  ? [
+                                      BoxShadow(
+                                        color: BarakaColors.primary
+                                            .withValues(alpha: 0.28),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(14),
+                                onTap: (!isExpired &&
+                                        widget.deal.remainingCount > 0)
+                                    ? widget.onBook
+                                    : null,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        (!isExpired &&
+                                                widget.deal.remainingCount > 0)
+                                            ? Icons.shopping_bag_outlined
+                                            : Icons.block_rounded,
+                                        size: 15,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        isExpired
+                                            ? "Expiré"
+                                            : (widget.deal.remainingCount > 0
+                                                ? "Réserver"
+                                                : "Épuisé"),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.1,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

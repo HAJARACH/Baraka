@@ -320,4 +320,151 @@ void main() {
       expect(results, isEmpty);
     });
   });
+
+  group('Regroupement par établissement', () {
+    test('Regroupe plusieurs offres d\'un même établissement', () {
+      final deals = [
+        DealItem(
+          id: '1',
+          title: 'Panier Viennoiseries',
+          businessName: 'Boulangerie Al Baraka',
+          originalPrice: 40,
+          discountedPrice: 20,
+          remainingCount: 3,
+          location: 'Guéliz',
+          latitude: 31.63,
+          longitude: -8.01,
+          imageUrl: '',
+          expiresAt: DateTime.now().add(const Duration(hours: 2)),
+          category: 'Boulangerie',
+        ),
+        DealItem(
+          id: '2',
+          title: 'Panier Salé',
+          businessName: 'Snack Atlas',
+          originalPrice: 50,
+          discountedPrice: 25,
+          remainingCount: 2,
+          location: 'Médina',
+          latitude: 31.62,
+          longitude: -7.99,
+          imageUrl: '',
+          expiresAt: DateTime.now().add(const Duration(hours: 3)),
+          category: 'Restaurant',
+        ),
+        DealItem(
+          id: '3',
+          title: 'Panier Baguettes',
+          businessName: 'Boulangerie Al Baraka',
+          originalPrice: 30,
+          discountedPrice: 15,
+          remainingCount: 4,
+          location: 'Guéliz',
+          latitude: 31.63,
+          longitude: -8.01,
+          imageUrl: '',
+          expiresAt: DateTime.now().add(const Duration(hours: 4)),
+          category: 'Boulangerie',
+        ),
+      ];
+
+      final Map<String, EstablishmentGroup> map = {};
+      for (final deal in deals) {
+        final key = deal.businessName.trim().toLowerCase();
+        if (!map.containsKey(key)) {
+          map[key] = EstablishmentGroup(
+            businessName: deal.businessName.trim(),
+            location: deal.location,
+            latitude: deal.latitude,
+            longitude: deal.longitude,
+            category: deal.category,
+            deals: [deal],
+          );
+        } else {
+          map[key]!.deals.add(deal);
+        }
+      }
+      final groups = map.values.toList();
+
+      expect(groups.length, 2);
+      expect(groups.first.businessName, 'Boulangerie Al Baraka');
+      expect(groups.first.deals.length, 2);
+      expect(groups.first.deals[0].title, 'Panier Viennoiseries');
+      expect(groups.first.deals[1].title, 'Panier Baguettes');
+      expect(groups.first.totalRemaining, 7);
+
+      expect(groups[1].businessName, 'Snack Atlas');
+      expect(groups[1].deals.length, 1);
+      expect(groups[1].totalRemaining, 2);
+    });
+
+    test('Préserve l\'ordre de tri des établissements', () {
+      final deals = [
+        DealItem(
+          id: '1',
+          title: 'Fleurs',
+          businessName: 'Fleuriste Jasmin',
+          originalPrice: 80,
+          discountedPrice: 40,
+          remainingCount: 1,
+          location: 'Hivernage',
+          latitude: 31.62,
+          longitude: -8.01,
+          imageUrl: '',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+          category: 'Fleuriste',
+        ),
+        DealItem(
+          id: '2',
+          title: 'Pâtisserie',
+          businessName: 'Pâtisserie Amandine',
+          originalPrice: 60,
+          discountedPrice: 30,
+          remainingCount: 2,
+          location: 'Guéliz',
+          latitude: 31.63,
+          longitude: -8.01,
+          imageUrl: '',
+          expiresAt: DateTime.now().add(const Duration(hours: 2)),
+          category: 'Boulangerie',
+        ),
+        DealItem(
+          id: '3',
+          title: 'Plantes',
+          businessName: 'Fleuriste Jasmin',
+          originalPrice: 50,
+          discountedPrice: 25,
+          remainingCount: 3,
+          location: 'Hivernage',
+          latitude: 31.62,
+          longitude: -8.01,
+          imageUrl: '',
+          expiresAt: DateTime.now().add(const Duration(hours: 3)),
+          category: 'Fleuriste',
+        ),
+      ];
+
+      final Map<String, EstablishmentGroup> map = {};
+      for (final deal in deals) {
+        final key = deal.businessName.trim().toLowerCase();
+        if (!map.containsKey(key)) {
+          map[key] = EstablishmentGroup(
+            businessName: deal.businessName.trim(),
+            location: deal.location,
+            latitude: deal.latitude,
+            longitude: deal.longitude,
+            category: deal.category,
+            deals: [deal],
+          );
+        } else {
+          map[key]!.deals.add(deal);
+        }
+      }
+      final groups = map.values.toList();
+
+      expect(groups.length, 2);
+      expect(groups[0].businessName, 'Fleuriste Jasmin');
+      expect(groups[1].businessName, 'Pâtisserie Amandine');
+    });
+  });
 }
