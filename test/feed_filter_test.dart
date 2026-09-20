@@ -532,17 +532,22 @@ void main() {
       expect(find.text('🔥 2 offres'), findsOneWidget);
       expect(find.text('Dès 10 MAD'), findsOneWidget);
 
-      // Tap on the pro case to expand deals
+      // Tap on the pro case to open the dedicated offers window
       await tester.tap(find.text('Voir les offres (2)'));
       await tester.pumpAndSettle();
 
-      // Now it should be expanded
-      expect(find.text('Masquer les offres'), findsOneWidget);
+      // Now the dedicated window (EstablishmentDetailScreen) is opened
+      expect(find.text('Offres disponibles (2)'), findsOneWidget);
       expect(find.text('Panier Croissants'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Baguettes traditionnelles'),
+        200.0,
+      );
       expect(find.text('Baguettes traditionnelles'), findsOneWidget);
 
-      // Tap again to collapse
-      await tester.tap(find.text('Masquer les offres'));
+      // Tap back button to return to feed
+      await tester.tap(find.byType(IconButton).first);
       await tester.pumpAndSettle();
 
       expect(find.text('Voir les offres (2)'), findsOneWidget);
