@@ -29,6 +29,302 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   final _imageUrlController = TextEditingController();
   String _selectedCategory = 'Restauration & Cafés';
   bool _isPublishing = false;
+  DateTime _expiresAt = DateTime.now().add(const Duration(hours: 4));
+
+  String _formatExpiryLabel(DateTime dt) {
+    final now = DateTime.now();
+    final isToday =
+        dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final tomorrow = now.add(const Duration(days: 1));
+    final isTomorrow = dt.year == tomorrow.year &&
+        dt.month == tomorrow.month &&
+        dt.day == tomorrow.day;
+
+    final h = dt.hour.toString().padLeft(2, '0');
+    final min = dt.minute.toString().padLeft(2, '0');
+
+    if (isToday) {
+      return "Aujourd'hui à $h:$min";
+    } else if (isTomorrow) {
+      return "Demain à $h:$min";
+    } else {
+      final d = dt.day.toString().padLeft(2, '0');
+      final m = dt.month.toString().padLeft(2, '0');
+      return "$d/$m/${dt.year} à $h:$min";
+    }
+  }
+
+  String _formatExpiryCountdown(DateTime dt) {
+    final diff = dt.difference(DateTime.now());
+    if (diff.isNegative) return "Expiré";
+    final d = diff.inDays;
+    final h = diff.inHours % 24;
+    final m = diff.inMinutes % 60;
+    if (d > 0) {
+      return "Valable $d j et $h h";
+    } else if (h > 0) {
+      return "Valable $h h et $m min";
+    } else {
+      return "Valable $m min";
+    }
+  }
+
+  Future<void> _pickCustomExpiry() async {
+    final now = DateTime.now();
+    final initialDate = _expiresAt.isAfter(now) ? _expiresAt : now;
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 90)),
+      helpText: "Date d'expiration de l'offre",
+      confirmText: "Suivant (Choisir l'heure)",
+      cancelText: "Annuler",
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: BarakaColors.primary,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate == null) return;
+    if (!mounted) return;
+
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_expiresAt),
+      helpText: "Heure d'expiration de l'offre",
+      confirmText: "Valider",
+      cancelText: "Annuler",
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: BarakaColors.primary,
+                ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedTime == null) return;
+    if (!mounted) return;
+
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    if (combined.isBefore(DateTime.now())) {
+      _showMessage(
+        "L'heure d'expiration doit être dans le futur.",
+        BarakaColors.terracotta,
+      );
+      return;
+    }
+
+    setState(() => _expiresAt = combined);
+  }
+
+  void _setQuickExpiry(DateTime target) {
+    if (target.isBefore(DateTime.now())) {
+      _showMessage(
+        "Cette heure est déjà passée aujourd'hui. Choisissez une heure ultérieure.",
+        Colors.orange,
+      );
+      return;
+    }
+    setState(() => _expiresAt = target);
+  }
+
+  Widget _buildExpiryQuickChip(String label, VoidCallback onTap,
+      {bool isSpecial = false}) {
+    return Material(
+      color: isSpecial ? BarakaColors.sage : Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: BarakaColors.border,
+              width: 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isSpecial ? BarakaColors.primary : BarakaColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpiryPickerSection() {
+    final now = DateTime.now();
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: BarakaColors.border),
+        boxShadow: BarakaColors.cardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: BarakaColors.sage,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.timer_outlined,
+                    size: 16, color: BarakaColors.primary),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Date & heure d'expiration",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: BarakaColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      "Quand expire ce bon plan ?",
+                      style: TextStyle(
+                          fontSize: 11, color: BarakaColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _pickCustomExpiry,
+                icon: const Icon(Icons.edit_calendar_rounded, size: 15),
+                label: const Text("Modifier",
+                    style:
+                        TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(
+                  foregroundColor: BarakaColors.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: _pickCustomExpiry,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: BarakaColors.sage.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                    color: BarakaColors.primary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_available_rounded,
+                      color: BarakaColors.primary, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _formatExpiryLabel(_expiresAt),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: BarakaColors.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatExpiryCountdown(_expiresAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: BarakaColors.textSecondary
+                                .withValues(alpha: 0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.keyboard_arrow_right_rounded,
+                      color: BarakaColors.primary, size: 20),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildExpiryQuickChip("Aujourd'hui (20h)", () {
+                  _setQuickExpiry(
+                      DateTime(now.year, now.month, now.day, 20, 0));
+                }),
+                const SizedBox(width: 6),
+                _buildExpiryQuickChip("Ce soir (23h)", () {
+                  _setQuickExpiry(
+                      DateTime(now.year, now.month, now.day, 23, 0));
+                }),
+                const SizedBox(width: 6),
+                _buildExpiryQuickChip("Demain (12h)", () {
+                  _setQuickExpiry(
+                      DateTime(now.year, now.month, now.day + 1, 12, 0));
+                }),
+                const SizedBox(width: 6),
+                _buildExpiryQuickChip("Demain (20h)", () {
+                  _setQuickExpiry(
+                      DateTime(now.year, now.month, now.day + 1, 20, 0));
+                }),
+                const SizedBox(width: 6),
+                _buildExpiryQuickChip("Dans 3 jours", () {
+                  _setQuickExpiry(now.add(const Duration(days: 3)));
+                }),
+                const SizedBox(width: 6),
+                _buildExpiryQuickChip("📅 Autre date & heure", _pickCustomExpiry,
+                    isSpecial: true),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   static const Map<String, String> _categoryImages = {
     'Restauration & Cafés': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
@@ -175,6 +471,14 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
       return;
     }
 
+    if (_expiresAt.isBefore(DateTime.now())) {
+      _showMessage(
+        "Veuillez choisir une date et heure d'expiration dans le futur.",
+        BarakaColors.terracotta,
+      );
+      return;
+    }
+
     setState(() => _isPublishing = true);
 
     try {
@@ -192,8 +496,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         'image_url': img.isNotEmpty ? img : defaultImg,
         'category': _selectedCategory,
         'remaining_count': stock,
-        'expires_at':
-            DateTime.now().add(const Duration(days: 3)).toIso8601String(),
+        'expires_at': _expiresAt.toIso8601String(),
       });
 
       if (!mounted) return;
@@ -203,8 +506,12 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
       _discountedPriceController.clear();
       _stockController.text = "5";
       _imageUrlController.clear();
+      _expiresAt = DateTime.now().add(const Duration(hours: 4));
 
-      _showMessage("Offre flash publiée avec succès ! (Valable 3 jours)", BarakaColors.primary);
+      _showMessage(
+        "Offre flash publiée avec succès ! (Valable jusqu'au ${_formatExpiryLabel(_expiresAt)})",
+        BarakaColors.primary,
+      );
       if (widget.onOfferPublished != null) widget.onOfferPublished!();
       setState(() {});
     } catch (e) {
@@ -716,6 +1023,8 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
             },
           ),
           const SizedBox(height: 12),
+          _buildExpiryPickerSection(),
+          const SizedBox(height: 12),
           TextField(
             controller: _imageUrlController,
             decoration: InputDecoration(
@@ -738,10 +1047,10 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text(
-                      "Publier l'offre (valable 3 jours)",
+                  : Text(
+                      "Publier l'offre • ${_formatExpiryCountdown(_expiresAt)}",
                       style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                     ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: BarakaColors.primary,
@@ -800,6 +1109,12 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
               final title = d['title'] ?? 'Offre sans nom';
               final price = d['discounted_price'] ?? 0;
               final stock = d['remaining_count'] ?? 0;
+              final expRaw = d['expires_at'];
+              final expDt = expRaw != null
+                  ? DateTime.tryParse(expRaw.toString())
+                  : null;
+              final expText =
+                  expDt != null ? " • Expire : ${_formatExpiryLabel(expDt)}" : "";
 
               return Card(
                 elevation: 0,
@@ -828,7 +1143,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                   ),
                   title: Text(title,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text("$price MAD • Restant : $stock"),
+                  subtitle: Text("$price MAD • Restant : $stock$expText"),
                   trailing: IconButton(
                     icon:
                         const Icon(Icons.delete_outline, color: Colors.redAccent),
