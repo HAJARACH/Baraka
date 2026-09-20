@@ -24,6 +24,98 @@ bool matchesCategory(DealItem deal, String category) {
   final text = "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
 
   switch (category) {
+    case 'Restauration & Cafés':
+      return text.contains('restau') ||
+          text.contains('café') ||
+          text.contains('cafe') ||
+          text.contains('food') ||
+          text.contains('plat') ||
+          text.contains('repas') ||
+          text.contains('traiteur') ||
+          text.contains('snack') ||
+          text.contains('burger') ||
+          text.contains('pizza') ||
+          text.contains('tajine') ||
+          text.contains('couscous') ||
+          text.contains('boulang') ||
+          text.contains('patiss') ||
+          text.contains('pâtiss') ||
+          text.contains('pain') ||
+          text.contains('croissant') ||
+          text.contains('viennoiserie') ||
+          text.contains('bakery') ||
+          text.contains('brunch') ||
+          text.contains('coffee');
+    case 'Beauté & Bien-être':
+      return text.contains('beauté') ||
+          text.contains('beaute') ||
+          text.contains('bien-être') ||
+          text.contains('bien etre') ||
+          text.contains('spa') ||
+          text.contains('massage') ||
+          text.contains('hammam') ||
+          text.contains('coiff') ||
+          text.contains('barber') ||
+          text.contains('soin') ||
+          text.contains('ongle');
+    case 'Hébergement & Séjours':
+      return text.contains('héberg') ||
+          text.contains('heberg') ||
+          text.contains('séjour') ||
+          text.contains('sejour') ||
+          text.contains('hôtel') ||
+          text.contains('hotel') ||
+          text.contains('riad') ||
+          text.contains('villa') ||
+          text.contains('resort') ||
+          text.contains('chambre') ||
+          text.contains('suite') ||
+          text.contains('nuit');
+    case 'Activités & Loisirs':
+      return text.contains('activité') ||
+          text.contains('activite') ||
+          text.contains('loisir') ||
+          text.contains('excursion') ||
+          text.contains('quad') ||
+          text.contains('buggy') ||
+          text.contains('dromadaire') ||
+          text.contains('visite') ||
+          text.contains('musée') ||
+          text.contains('parc') ||
+          text.contains('piscine');
+    case 'Mobilité & Transports':
+      return text.contains('mobilité') ||
+          text.contains('mobilite') ||
+          text.contains('transport') ||
+          text.contains('location') ||
+          text.contains('voiture') ||
+          text.contains('auto') ||
+          text.contains('scooter') ||
+          text.contains('moto') ||
+          text.contains('vélo') ||
+          text.contains('velo') ||
+          text.contains('navette') ||
+          text.contains('transfert') ||
+          text.contains('taxi');
+    case 'Shopping & Services':
+      return text.contains('shopping') ||
+          text.contains('service') ||
+          text.contains('fleur') ||
+          text.contains('florist') ||
+          text.contains('plante') ||
+          text.contains('bouquet') ||
+          text.contains('boutique') ||
+          text.contains('magasin') ||
+          text.contains('mode') ||
+          text.contains('vêtement') ||
+          text.contains('vetement') ||
+          text.contains('artisanat') ||
+          text.contains('souk') ||
+          text.contains('épicer') ||
+          text.contains('epicer') ||
+          text.contains('supermarch') ||
+          text.contains('grocery') ||
+          text.contains('primeur');
     case 'Boulangerie':
       return text.contains('boulang') ||
           text.contains('patiss') ||
@@ -175,6 +267,92 @@ void main() {
       final results = allDeals.where((d) => matchesCategory(d, 'Fleuriste')).toList();
       expect(results.length, 1);
       expect(results.first.id, '4');
+    });
+
+    test('Restauration & Cafés filtre les offres de restauration et boulangerie', () {
+      final results = allDeals.where((d) => matchesCategory(d, 'Restauration & Cafés')).toList();
+      expect(results.length, 2); // Boulangerie Paul + Restaurant Al Fassia
+    });
+
+    test('Shopping & Services filtre les offres de shopping, services, épicerie et fleuriste', () {
+      final results = allDeals.where((d) => matchesCategory(d, 'Shopping & Services')).toList();
+      expect(results.length, 2); // Épicerie Bio + Fleuriste Jasmin
+    });
+
+    test('Beauté & Bien-être filtre les établissements de soins ou spa', () {
+      final spaDeal = DealItem(
+        id: '5',
+        title: 'Hammam & Massage Zen',
+        businessName: 'Spa Les Bains d\'Orient',
+        originalPrice: 300,
+        discountedPrice: 150,
+        remainingCount: 2,
+        location: 'Médina, Marrakech',
+        latitude: 31.625,
+        longitude: -7.989,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 3)),
+        category: 'Beauté & Bien-être',
+      );
+      expect(matchesCategory(spaDeal, 'Beauté & Bien-être'), isTrue);
+      expect(matchesCategory(spaDeal, 'Restauration & Cafés'), isFalse);
+    });
+
+    test('Hébergement & Séjours filtre les riads et hôtels', () {
+      final riadDeal = DealItem(
+        id: '6',
+        title: 'Nuitée Romantique en Riad',
+        businessName: 'Riad Marrakech Charm',
+        originalPrice: 1000,
+        discountedPrice: 500,
+        remainingCount: 1,
+        location: 'Médina, Marrakech',
+        latitude: 31.625,
+        longitude: -7.989,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 3)),
+        category: 'Hébergement & Séjours',
+      );
+      expect(matchesCategory(riadDeal, 'Hébergement & Séjours'), isTrue);
+      expect(matchesCategory(riadDeal, 'Activités & Loisirs'), isFalse);
+    });
+
+    test('Activités & Loisirs filtre les excursions et loisirs', () {
+      final quadDeal = DealItem(
+        id: '7',
+        title: 'Excursion Quad dans la Palmeraie',
+        businessName: 'Marrakech Aventure Quad',
+        originalPrice: 400,
+        discountedPrice: 200,
+        remainingCount: 4,
+        location: 'Palmeraie, Marrakech',
+        latitude: 31.650,
+        longitude: -7.950,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 3)),
+        category: 'Activités & Loisirs',
+      );
+      expect(matchesCategory(quadDeal, 'Activités & Loisirs'), isTrue);
+      expect(matchesCategory(quadDeal, 'Mobilité & Transports'), isFalse);
+    });
+
+    test('Mobilité & Transports filtre la location et transport', () {
+      final carDeal = DealItem(
+        id: '8',
+        title: 'Location Voiture Économique',
+        businessName: 'Atlas Auto Location',
+        originalPrice: 350,
+        discountedPrice: 200,
+        remainingCount: 2,
+        location: 'Guéliz, Marrakech',
+        latitude: 31.634,
+        longitude: -8.012,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 3)),
+        category: 'Mobilité & Transports',
+      );
+      expect(matchesCategory(carDeal, 'Mobilité & Transports'), isTrue);
+      expect(matchesCategory(carDeal, 'Restauration & Cafés'), isFalse);
     });
   });
 

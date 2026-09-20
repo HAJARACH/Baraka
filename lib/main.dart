@@ -1087,22 +1087,26 @@ class _FeedViewState extends State<FeedView> {
 
   static const List<Map<String, dynamic>> _alimentaireCategories = [
     {'label': 'Tous', 'icon': Icons.restaurant_menu_rounded},
-    {'label': 'Boulangerie', 'icon': Icons.bakery_dining_rounded},
-    {'label': 'Restaurant', 'icon': Icons.restaurant_rounded},
-    {'label': 'Épicerie', 'icon': Icons.local_grocery_store_rounded},
+    {'label': 'Restauration & Cafés', 'icon': Icons.restaurant_rounded},
   ];
 
   static const List<Map<String, dynamic>> _servicesCategories = [
     {'label': 'Tous', 'icon': Icons.room_service_rounded},
-    {'label': 'Fleuriste', 'icon': Icons.local_florist_rounded},
+    {'label': 'Beauté & Bien-être', 'icon': Icons.spa_rounded},
+    {'label': 'Hébergement & Séjours', 'icon': Icons.hotel_rounded},
+    {'label': 'Activités & Loisirs', 'icon': Icons.attractions_rounded},
+    {'label': 'Mobilité & Transports', 'icon': Icons.directions_car_rounded},
+    {'label': 'Shopping & Services', 'icon': Icons.shopping_bag_rounded},
   ];
 
   static const List<Map<String, dynamic>> _allCategories = [
     {'label': 'Tous', 'icon': Icons.grid_view_rounded},
-    {'label': 'Boulangerie', 'icon': Icons.bakery_dining_rounded},
-    {'label': 'Restaurant', 'icon': Icons.restaurant_rounded},
-    {'label': 'Épicerie', 'icon': Icons.local_grocery_store_rounded},
-    {'label': 'Fleuriste', 'icon': Icons.local_florist_rounded},
+    {'label': 'Restauration & Cafés', 'icon': Icons.restaurant_rounded},
+    {'label': 'Beauté & Bien-être', 'icon': Icons.spa_rounded},
+    {'label': 'Hébergement & Séjours', 'icon': Icons.hotel_rounded},
+    {'label': 'Activités & Loisirs', 'icon': Icons.attractions_rounded},
+    {'label': 'Mobilité & Transports', 'icon': Icons.directions_car_rounded},
+    {'label': 'Shopping & Services', 'icon': Icons.shopping_bag_rounded},
   ];
 
   List<Map<String, dynamic>> get _currentCategories {
@@ -1195,7 +1199,8 @@ class _FeedViewState extends State<FeedView> {
         text.contains('primeur') ||
         text.contains('fruit') ||
         text.contains('légume') ||
-        text.contains('alimentation');
+        text.contains('alimentation') ||
+        text.contains('restauration');
   }
 
   bool _isServices(DealItem deal) {
@@ -1207,9 +1212,25 @@ class _FeedViewState extends State<FeedView> {
         text.contains('bouquet') ||
         text.contains('beauté') ||
         text.contains('beaute') ||
+        text.contains('bien-être') ||
+        text.contains('bien etre') ||
+        text.contains('spa') ||
         text.contains('soin') ||
         text.contains('coiff') ||
-        text.contains('artisan');
+        text.contains('artisan') ||
+        text.contains('héberg') ||
+        text.contains('heberg') ||
+        text.contains('hôtel') ||
+        text.contains('hotel') ||
+        text.contains('riad') ||
+        text.contains('activité') ||
+        text.contains('activite') ||
+        text.contains('loisir') ||
+        text.contains('mobilité') ||
+        text.contains('mobilite') ||
+        text.contains('transport') ||
+        text.contains('shopping') ||
+        text.contains('service');
   }
 
   bool _matchesCategory(DealItem deal, String category) {
@@ -1230,6 +1251,149 @@ class _FeedViewState extends State<FeedView> {
         "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
 
     switch (category) {
+      case 'Restauration & Cafés':
+        return text.contains('restau') ||
+            text.contains('café') ||
+            text.contains('cafe') ||
+            text.contains('food') ||
+            text.contains('plat') ||
+            text.contains('repas') ||
+            text.contains('traiteur') ||
+            text.contains('snack') ||
+            text.contains('burger') ||
+            text.contains('pizza') ||
+            text.contains('tajine') ||
+            text.contains('couscous') ||
+            text.contains('boulang') ||
+            text.contains('patiss') ||
+            text.contains('pâtiss') ||
+            text.contains('pain') ||
+            text.contains('croissant') ||
+            text.contains('viennoiserie') ||
+            text.contains('bakery') ||
+            text.contains('brunch') ||
+            text.contains('coffee') ||
+            text.contains('thé') ||
+            text.contains('the') ||
+            text.contains('boisson') ||
+            text.contains('jus');
+      case 'Beauté & Bien-être':
+        return text.contains('beauté') ||
+            text.contains('beaute') ||
+            text.contains('bien-être') ||
+            text.contains('bien etre') ||
+            text.contains('spa') ||
+            text.contains('massage') ||
+            text.contains('hammam') ||
+            text.contains('coiff') ||
+            text.contains('barber') ||
+            text.contains('esthéti') ||
+            text.contains('estheti') ||
+            text.contains('manucure') ||
+            text.contains('pédicure') ||
+            text.contains('pedicure') ||
+            text.contains('ongle') ||
+            text.contains('soin') ||
+            text.contains('visage') ||
+            text.contains('corps') ||
+            text.contains('relaxation') ||
+            text.contains('zen') ||
+            text.contains('yoga') ||
+            text.contains('fitness');
+      case 'Hébergement & Séjours':
+        return text.contains('héberg') ||
+            text.contains('heberg') ||
+            text.contains('séjour') ||
+            text.contains('sejour') ||
+            text.contains('hôtel') ||
+            text.contains('hotel') ||
+            text.contains('riad') ||
+            text.contains('villa') ||
+            text.contains('resort') ||
+            text.contains('chambre') ||
+            text.contains('suite') ||
+            text.contains('nuitée') ||
+            text.contains('nuitee') ||
+            text.contains('nuit') ||
+            text.contains('guest') ||
+            text.contains('maison d\'hôte') ||
+            text.contains('auberge') ||
+            text.contains('lodge');
+      case 'Activités & Loisirs':
+        return text.contains('activité') ||
+            text.contains('activite') ||
+            text.contains('loisir') ||
+            text.contains('excursion') ||
+            text.contains('quad') ||
+            text.contains('buggy') ||
+            text.contains('dromadaire') ||
+            text.contains('chameau') ||
+            text.contains('visite') ||
+            text.contains('musée') ||
+            text.contains('musee') ||
+            text.contains('parc') ||
+            text.contains('piscine') ||
+            text.contains('escape') ||
+            text.contains('karting') ||
+            text.contains('bowling') ||
+            text.contains('cinéma') ||
+            text.contains('cinema') ||
+            text.contains('atelier') ||
+            text.contains('cours') ||
+            text.contains('sport') ||
+            text.contains('balade') ||
+            text.contains('tourisme') ||
+            text.contains('aventure');
+      case 'Mobilité & Transports':
+        return text.contains('mobilité') ||
+            text.contains('mobilite') ||
+            text.contains('transport') ||
+            text.contains('location') ||
+            text.contains('voiture') ||
+            text.contains('auto') ||
+            text.contains('scooter') ||
+            text.contains('moto') ||
+            text.contains('vélo') ||
+            text.contains('velo') ||
+            text.contains('navette') ||
+            text.contains('transfert') ||
+            text.contains('taxi') ||
+            text.contains('chauffeur') ||
+            text.contains('vtc') ||
+            text.contains('aéroport') ||
+            text.contains('aeroport') ||
+            text.contains('parking') ||
+            text.contains('lavage');
+      case 'Shopping & Services':
+        return text.contains('shopping') ||
+            text.contains('service') ||
+            text.contains('fleur') ||
+            text.contains('florist') ||
+            text.contains('plante') ||
+            text.contains('bouquet') ||
+            text.contains('boutique') ||
+            text.contains('magasin') ||
+            text.contains('mode') ||
+            text.contains('vêtement') ||
+            text.contains('vetement') ||
+            text.contains('accessoire') ||
+            text.contains('bijou') ||
+            text.contains('bijouterie') ||
+            text.contains('artisanat') ||
+            text.contains('souk') ||
+            text.contains('cuir') ||
+            text.contains('tapis') ||
+            text.contains('poterie') ||
+            text.contains('cadeau') ||
+            text.contains('épicer') ||
+            text.contains('epicer') ||
+            text.contains('supermarch') ||
+            text.contains('grocery') ||
+            text.contains('primeur') ||
+            text.contains('fruit') ||
+            text.contains('légume') ||
+            text.contains('alimentation');
+      // Legacy categories for backward compatibility
       case 'Boulangerie':
         return text.contains('boulang') ||
             text.contains('patiss') ||
@@ -2317,11 +2481,51 @@ class EstablishmentGroupWidget extends StatelessWidget {
 
   IconData _getCategoryIcon(String cat) {
     final c = cat.toLowerCase();
+    if (c.contains('restau') ||
+        c.contains('café') ||
+        c.contains('cafe') ||
+        c.contains('food') ||
+        c.contains('plat')) {
+      return Icons.restaurant_rounded;
+    }
+    if (c.contains('beauté') ||
+        c.contains('beaute') ||
+        c.contains('spa') ||
+        c.contains('bien-être') ||
+        c.contains('bien etre') ||
+        c.contains('soin') ||
+        c.contains('coiff')) {
+      return Icons.spa_rounded;
+    }
+    if (c.contains('héberg') ||
+        c.contains('heberg') ||
+        c.contains('séjour') ||
+        c.contains('sejour') ||
+        c.contains('hotel') ||
+        c.contains('hôtel') ||
+        c.contains('riad')) {
+      return Icons.hotel_rounded;
+    }
+    if (c.contains('activité') ||
+        c.contains('activite') ||
+        c.contains('loisir')) {
+      return Icons.attractions_rounded;
+    }
+    if (c.contains('mobilité') ||
+        c.contains('mobilite') ||
+        c.contains('transport') ||
+        c.contains('auto') ||
+        c.contains('voiture')) {
+      return Icons.directions_car_rounded;
+    }
+    if (c.contains('shopping') ||
+        c.contains('service') ||
+        c.contains('boutique') ||
+        c.contains('mode')) {
+      return Icons.shopping_bag_rounded;
+    }
     if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
       return Icons.bakery_dining_rounded;
-    }
-    if (c.contains('restau') || c.contains('food') || c.contains('plat')) {
-      return Icons.restaurant_rounded;
     }
     if (c.contains('épicer') ||
         c.contains('epicer') ||
@@ -3202,11 +3406,51 @@ class _DealCardWidgetState extends State<DealCardWidget> {
 
   IconData _getCategoryIcon(String cat) {
     final c = cat.toLowerCase();
+    if (c.contains('restau') ||
+        c.contains('café') ||
+        c.contains('cafe') ||
+        c.contains('food') ||
+        c.contains('plat')) {
+      return Icons.restaurant_rounded;
+    }
+    if (c.contains('beauté') ||
+        c.contains('beaute') ||
+        c.contains('spa') ||
+        c.contains('bien-être') ||
+        c.contains('bien etre') ||
+        c.contains('soin') ||
+        c.contains('coiff')) {
+      return Icons.spa_rounded;
+    }
+    if (c.contains('héberg') ||
+        c.contains('heberg') ||
+        c.contains('séjour') ||
+        c.contains('sejour') ||
+        c.contains('hotel') ||
+        c.contains('hôtel') ||
+        c.contains('riad')) {
+      return Icons.hotel_rounded;
+    }
+    if (c.contains('activité') ||
+        c.contains('activite') ||
+        c.contains('loisir')) {
+      return Icons.attractions_rounded;
+    }
+    if (c.contains('mobilité') ||
+        c.contains('mobilite') ||
+        c.contains('transport') ||
+        c.contains('auto') ||
+        c.contains('voiture')) {
+      return Icons.directions_car_rounded;
+    }
+    if (c.contains('shopping') ||
+        c.contains('service') ||
+        c.contains('boutique') ||
+        c.contains('mode')) {
+      return Icons.shopping_bag_rounded;
+    }
     if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
       return Icons.bakery_dining_rounded;
-    }
-    if (c.contains('restau') || c.contains('food') || c.contains('plat')) {
-      return Icons.restaurant_rounded;
     }
     if (c.contains('épicer') ||
         c.contains('epicer') ||
@@ -4363,7 +4607,7 @@ class _MerchantViewState extends State<MerchantView> {
   final _origCtrl = TextEditingController();
   final _discCtrl = TextEditingController();
   final _stockCtrl = TextEditingController(text: "5");
-  String _category = 'Boulangerie';
+  String _category = 'Restauration & Cafés';
   bool _loading = false;
 
   Future<void> _publish() async {
@@ -4466,20 +4710,28 @@ class _MerchantViewState extends State<MerchantView> {
             ),
             items: const [
               DropdownMenuItem(
-                value: 'Boulangerie',
-                child: Text('🥖 Boulangerie'),
+                value: 'Restauration & Cafés',
+                child: Text('🍽️ Restauration & Cafés'),
               ),
               DropdownMenuItem(
-                value: 'Restaurant',
-                child: Text('🍽️ Restaurant'),
+                value: 'Beauté & Bien-être',
+                child: Text('💆 Beauté & Bien-être'),
               ),
               DropdownMenuItem(
-                value: 'Épicerie',
-                child: Text('🛒 Épicerie'),
+                value: 'Hébergement & Séjours',
+                child: Text('🏨 Hébergement & Séjours'),
               ),
               DropdownMenuItem(
-                value: 'Fleuriste',
-                child: Text('💐 Fleuriste'),
+                value: 'Activités & Loisirs',
+                child: Text('🎡 Activités & Loisirs'),
+              ),
+              DropdownMenuItem(
+                value: 'Mobilité & Transports',
+                child: Text('🚗 Mobilité & Transports'),
+              ),
+              DropdownMenuItem(
+                value: 'Shopping & Services',
+                child: Text('🛍️ Shopping & Services'),
               ),
             ],
             onChanged: (val) {

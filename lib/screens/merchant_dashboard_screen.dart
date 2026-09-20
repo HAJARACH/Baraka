@@ -27,10 +27,16 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   final _stockController = TextEditingController(text: "5");
   final _locationController = TextEditingController(text: "Guéliz, Marrakech");
   final _imageUrlController = TextEditingController();
-  String _selectedCategory = 'Boulangerie';
+  String _selectedCategory = 'Restauration & Cafés';
   bool _isPublishing = false;
 
   static const Map<String, String> _categoryImages = {
+    'Restauration & Cafés': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
+    'Beauté & Bien-être': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef',
+    'Hébergement & Séjours': 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+    'Activités & Loisirs': 'https://images.unsplash.com/photo-1533105079780-92b9be482077',
+    'Mobilité & Transports': 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d',
+    'Shopping & Services': 'https://images.unsplash.com/photo-1472851294608-062f824d29cc',
     'Boulangerie': 'https://images.unsplash.com/photo-1509440159596-0249088772ff',
     'Restaurant': 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
     'Épicerie': 'https://images.unsplash.com/photo-1542838132-92c53300491e',
@@ -698,14 +704,12 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
                   OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
             items: [
-              'Boulangerie',
-              'Restaurant',
-              'Épicerie',
-              'Fleuriste',
-              'Food',
-              'Bien-être',
-              'Activités',
-              'Shopping',
+              'Restauration & Cafés',
+              'Beauté & Bien-être',
+              'Hébergement & Séjours',
+              'Activités & Loisirs',
+              'Mobilité & Transports',
+              'Shopping & Services',
             ].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
             onChanged: (val) {
               if (val != null) setState(() => _selectedCategory = val);
