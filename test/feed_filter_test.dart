@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:baraka_app/main.dart';
+import 'package:baraka_app/models/category_hierarchy.dart';
 
 double calculateDistanceKm(double lat1, double lon1, double lat2, double lon2) {
   const double r = 6371.0;
@@ -20,6 +21,9 @@ bool matchesCategory(DealItem deal, String category) {
   final dealCategory = deal.category.toLowerCase();
   final target = category.toLowerCase();
   if (dealCategory.contains(target)) return true;
+
+  final parent = BarakaCategoryHierarchy.getParentCategoryFor(deal.category);
+  if (parent != null && parent.toLowerCase() == target) return true;
 
   final text = "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
 
@@ -729,6 +733,192 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Voir les offres (2)'), findsOneWidget);
+    });
+  });
+
+  group('Hiérarchie des sous-catégories Baraka', () {
+    test('Contient exactement les 6 grandes catégories demandées', () {
+      final labels = BarakaCategoryHierarchy.allCategories.map((c) => c.label).toList();
+      expect(labels, [
+        'Restauration & Cafés',
+        'Beauté & Bien-être',
+        'Hébergement & Séjours',
+        'Activités & Loisirs',
+        'Mobilité & Transports',
+        'Shopping & Services',
+      ]);
+    });
+
+    test('Restauration & Cafés contient les 4 sous-catégories demandées', () {
+      final subs = BarakaCategoryHierarchy.getSubcategoriesFor('Restauration & Cafés');
+      expect(subs, [
+        'Restaurants & Tables',
+        'Snacks & Street Food',
+        'Cafés, Salons de thé & Glaces',
+        'Boulangeries & Pâtisseries',
+      ]);
+    });
+
+    test('Beauté & Bien-être contient les 3 sous-catégories demandées', () {
+      final subs = BarakaCategoryHierarchy.getSubcategoriesFor('Beauté & Bien-être');
+      expect(subs, [
+        'Hammam & Spa',
+        'Coiffure & Barbershop',
+        'Soins & Esthétique',
+      ]);
+    });
+
+    test('Hébergement & Séjours contient les 3 sous-catégories demandées', () {
+      final subs = BarakaCategoryHierarchy.getSubcategoriesFor('Hébergement & Séjours');
+      expect(subs, [
+        "Riads & Maisons d'hôtes",
+        'Hôtels & Résidences',
+        'Day Pass (Journées détente)',
+      ]);
+    });
+
+    test('Activités & Loisirs contient les 3 sous-catégories demandées', () {
+      final subs = BarakaCategoryHierarchy.getSubcategoriesFor('Activités & Loisirs');
+      expect(subs, [
+        'Excursions & Plein air',
+        'Divertissement indoor',
+        'Sport & Remise en forme',
+      ]);
+    });
+
+    test('Mobilité & Transports contient les 3 sous-catégories demandées', () {
+      final subs = BarakaCategoryHierarchy.getSubcategoriesFor('Mobilité & Transports');
+      expect(subs, [
+        'Location de voitures',
+        'Deux-roues & Mobilité douce',
+        'Chauffeurs & Transferts',
+      ]);
+    });
+
+    test('Shopping & Services contient les 3 sous-catégories demandées', () {
+      final subs = BarakaCategoryHierarchy.getSubcategoriesFor('Shopping & Services');
+      expect(subs, [
+        'Mode & Accessoires',
+        'Maison & Décoration',
+        'Services du quotidien',
+      ]);
+    });
+
+    test('Parent category resolution works for all 18 subcategories', () {
+      expect(
+        BarakaCategoryHierarchy.getParentCategoryFor('Snacks & Street Food'),
+        'Restauration & Cafés',
+      );
+      expect(
+        BarakaCategoryHierarchy.getParentCategoryFor('Hammam & Spa'),
+        'Beauté & Bien-être',
+      );
+      expect(
+        BarakaCategoryHierarchy.getParentCategoryFor('Day Pass (Journées détente)'),
+        'Hébergement & Séjours',
+      );
+      expect(
+        BarakaCategoryHierarchy.getParentCategoryFor('Excursions & Plein air'),
+        'Activités & Loisirs',
+      );
+      expect(
+        BarakaCategoryHierarchy.getParentCategoryFor('Location de voitures'),
+        'Mobilité & Transports',
+      );
+      expect(
+        BarakaCategoryHierarchy.getParentCategoryFor('Services du quotidien'),
+        'Shopping & Services',
+      );
+    });
+
+    test('matchesSubcategory matches by exact category name or keyword', () {
+      final dealTacos = DealItem(
+        id: 'sub_1',
+        title: 'Menu Tacos Double Sauce Fromagère',
+        businessName: 'Tacos de Lyon',
+        originalPrice: 65,
+        discountedPrice: 35,
+        remainingCount: 5,
+        location: 'Guéliz',
+        latitude: 31.63,
+        longitude: -8.01,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 3)),
+        category: 'Snacks & Street Food',
+      );
+
+      final dealDayPass = DealItem(
+        id: 'sub_2',
+        title: 'Formule Déjeuner + Accès Piscine & Transat',
+        businessName: 'Palais Namaskar',
+        originalPrice: 500,
+        discountedPrice: 250,
+        remainingCount: 2,
+        location: 'Palmeraie',
+        latitude: 31.65,
+        longitude: -7.95,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 5)),
+        category: 'Day Pass (Journées détente)',
+      );
+
+      // Tous matches everything
+      expect(BarakaCategoryHierarchy.matchesSubcategory(dealTacos, 'Tous'), isTrue);
+      expect(BarakaCategoryHierarchy.matchesSubcategory(dealDayPass, 'Tous'), isTrue);
+
+      // Exact match
+      expect(
+        BarakaCategoryHierarchy.matchesSubcategory(dealTacos, 'Snacks & Street Food'),
+        isTrue,
+      );
+      expect(
+        BarakaCategoryHierarchy.matchesSubcategory(dealTacos, 'Restaurants & Tables'),
+        isFalse,
+      );
+
+      // Day pass
+      expect(
+        BarakaCategoryHierarchy.matchesSubcategory(dealDayPass, 'Day Pass (Journées détente)'),
+        isTrue,
+      );
+      expect(
+        BarakaCategoryHierarchy.matchesSubcategory(dealDayPass, 'Hôtels & Résidences'),
+        isFalse,
+      );
+
+      // Keyword match from general category
+      final dealQuadKeyword = DealItem(
+        id: 'sub_3',
+        title: 'Balade en quad 2h dans les dunes d\'Agafay',
+        businessName: 'Dunes Aventure',
+        originalPrice: 400,
+        discountedPrice: 200,
+        remainingCount: 3,
+        location: 'Agafay',
+        latitude: 31.4,
+        longitude: -8.2,
+        imageUrl: '',
+        expiresAt: DateTime.now().add(const Duration(hours: 4)),
+        category: 'Activités & Loisirs',
+      );
+
+      expect(
+        BarakaCategoryHierarchy.matchesSubcategory(dealQuadKeyword, 'Excursions & Plein air'),
+        isTrue,
+      );
+    });
+
+    test('All 18 subcategories have valid icons and default images', () {
+      for (final cat in BarakaCategoryHierarchy.allCategories) {
+        expect(cat.icon, isNotNull);
+        for (final sub in cat.subcategories) {
+          expect(sub.icon, isNotNull);
+          expect(sub.description, isNotEmpty);
+          expect(sub.keywords, isNotEmpty);
+          expect(BarakaCategoryHierarchy.defaultImages[sub.label], isNotNull);
+          expect(BarakaCategoryHierarchy.getIcon(sub.label), isNotNull);
+        }
+      }
     });
   });
 }

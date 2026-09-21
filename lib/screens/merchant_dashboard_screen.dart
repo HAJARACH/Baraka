@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/category_hierarchy.dart';
 import '../theme/app_theme.dart';
 import 'qr_scanner_screen.dart';
 
@@ -28,6 +29,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
   final _locationController = TextEditingController(text: "Guéliz, Marrakech");
   final _imageUrlController = TextEditingController();
   String _selectedCategory = 'Restauration & Cafés';
+  String _selectedSubcategory = 'Restaurants & Tables';
   bool _isPublishing = false;
   DateTime _expiresAt = DateTime.now().add(const Duration(hours: 4));
 
@@ -482,7 +484,9 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
     setState(() => _isPublishing = true);
 
     try {
-      final defaultImg = _categoryImages[_selectedCategory] ??
+      final defaultImg = BarakaCategoryHierarchy.defaultImages[_selectedSubcategory] ??
+          BarakaCategoryHierarchy.defaultImages[_selectedCategory] ??
+          _categoryImages[_selectedCategory] ??
           'https://images.unsplash.com/photo-1541544741938-0af808871cc0';
 
       await supabase.from('deals').insert({
@@ -494,7 +498,7 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
         'original_price': orig,
         'discounted_price': disc,
         'image_url': img.isNotEmpty ? img : defaultImg,
-        'category': _selectedCategory,
+        'category': _selectedSubcategory,
         'remaining_count': stock,
         'expires_at': _expiresAt.toIso8601String(),
       });
@@ -1004,22 +1008,43 @@ class _MerchantDashboardScreenState extends State<MerchantDashboardScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
+            key: ValueKey('merchant_cat_$_selectedCategory'),
             initialValue: _selectedCategory,
             decoration: InputDecoration(
               labelText: "Catégorie",
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            items: [
-              'Restauration & Cafés',
-              'Beauté & Bien-être',
-              'Hébergement & Séjours',
-              'Activités & Loisirs',
-              'Mobilité & Transports',
-              'Shopping & Services',
-            ].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+            items: BarakaCategoryHierarchy.allCategories
+                .map((c) => DropdownMenuItem(value: c.label, child: Text(c.label)))
+                .toList(),
             onChanged: (val) {
-              if (val != null) setState(() => _selectedCategory = val);
+              if (val != null) {
+                setState(() {
+                  _selectedCategory = val;
+                  final subs = BarakaCategoryHierarchy.getSubcategoriesFor(val);
+                  _selectedSubcategory = subs.isNotEmpty ? subs.first : val;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: ValueKey('merchant_sub_${_selectedCategory}_$_selectedSubcategory'),
+            initialValue: _selectedSubcategory,
+            decoration: InputDecoration(
+              labelText: "Sous-catégorie",
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            items: BarakaCategoryHierarchy.getSubcategoriesFor(_selectedCategory)
+                .map((s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s, overflow: TextOverflow.ellipsis),
+                    ))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _selectedSubcategory = val);
             },
           ),
           const SizedBox(height: 12),

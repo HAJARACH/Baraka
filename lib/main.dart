@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'models/category_hierarchy.dart';
 import 'screens/admin_screen.dart';
 import 'screens/category_hub_screen.dart';
 import 'screens/establishment_detail_screen.dart';
@@ -1082,6 +1083,7 @@ class _FeedViewState extends State<FeedView> {
   String _searchQuery = '';
   late String _selectedMacroCategory;
   String _selectedCategory = 'Tous';
+  String _selectedSubcategory = 'Tous';
   String _selectedQuartier = 'Tous';
   FeedSortOption _sortOption = FeedSortOption.distance;
 
@@ -1246,6 +1248,9 @@ class _FeedViewState extends State<FeedView> {
     final target = category.toLowerCase();
 
     if (dealCategory.contains(target)) return true;
+
+    final parent = BarakaCategoryHierarchy.getParentCategoryFor(deal.category);
+    if (parent != null && parent.toLowerCase() == target) return true;
 
     final text =
         "${deal.title} ${deal.businessName} ${deal.category}".toLowerCase();
@@ -1452,9 +1457,11 @@ class _FeedViewState extends State<FeedView> {
   List<DealItem> _applyFiltersAndSort(List<DealItem> allDeals) {
     final filtered = allDeals.where((deal) {
       final matchesCat = _matchesCategory(deal, _selectedCategory);
+      final matchesSub =
+          BarakaCategoryHierarchy.matchesSubcategory(deal, _selectedSubcategory);
       final matchesQ = _matchesQuartier(deal, _selectedQuartier);
       final matchesS = _matchesSearch(deal, _searchQuery);
-      return matchesCat && matchesQ && matchesS;
+      return matchesCat && matchesSub && matchesQ && matchesS;
     }).toList();
 
     switch (_sortOption) {
@@ -1502,6 +1509,7 @@ class _FeedViewState extends State<FeedView> {
     if (_searchQuery.trim().isNotEmpty) count++;
     if (_selectedMacroCategory != 'Tous') count++;
     if (_selectedCategory != 'Tous') count++;
+    if (_selectedSubcategory != 'Tous') count++;
     if (_selectedQuartier != 'Tous') count++;
     if (_sortOption != FeedSortOption.distance) count++;
     return count;
@@ -1513,6 +1521,7 @@ class _FeedViewState extends State<FeedView> {
       _searchQuery = '';
       _selectedMacroCategory = 'Tous';
       _selectedCategory = 'Tous';
+      _selectedSubcategory = 'Tous';
       _selectedQuartier = 'Tous';
       _sortOption = FeedSortOption.distance;
     });
@@ -1770,6 +1779,7 @@ class _FeedViewState extends State<FeedView> {
           setState(() {
             _selectedMacroCategory = key;
             _selectedCategory = 'Tous';
+            _selectedSubcategory = 'Tous';
           });
         },
         child: AnimatedContainer(
@@ -1819,47 +1829,66 @@ class _FeedViewState extends State<FeedView> {
     );
   }
 
-  Widget _buildCategorySelector() {
-    final categories = _currentCategories;
-    return SizedBox(
-      height: 44,
+  Widget _buildSubcategorySelector() {
+    if (_selectedCategory == 'Tous') return const SizedBox.shrink();
+    final subcategories =
+        BarakaCategoryHierarchy.getSubcategoriesFor(_selectedCategory);
+    if (subcategories.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 6, bottom: 2),
+      height: 34,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemCount: subcategories.length + 1,
+        separatorBuilder: (context, index) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
-          final cat = categories[index];
-          final rawLabel = cat['label'] as String;
-          final icon = cat['icon'] as IconData;
-          final isSelected = _selectedCategory == rawLabel;
-
-          String displayLabel = rawLabel;
-          if (rawLabel == 'Tous') {
-            if (_selectedMacroCategory == 'Alimentaire') {
-              displayLabel = "Tout l'alimentaire";
-            } else if (_selectedMacroCategory == 'Services') {
-              displayLabel = "Tous les services";
-            } else {
-              displayLabel = "Toutes";
-            }
+          if (index == 0) {
+            final isSelected = _selectedSubcategory == 'Tous';
+            return ChoiceChip(
+              selected: isSelected,
+              showCheckmark: false,
+              label: const Text("Toutes"),
+              labelStyle: TextStyle(
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                fontSize: 11,
+                color: isSelected ? Colors.white : BarakaColors.textSecondary,
+              ),
+              selectedColor: BarakaColors.primary,
+              backgroundColor: BarakaColors.sage.withValues(alpha: 0.25),
+              side: BorderSide(
+                color: isSelected
+                    ? BarakaColors.primary
+                    : BarakaColors.border.withValues(alpha: 0.6),
+                width: 1,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              onSelected: (_) {
+                setState(() => _selectedSubcategory = 'Tous');
+              },
+            );
           }
+
+          final sub = subcategories[index - 1];
+          final isSelected = _selectedSubcategory == sub;
+          final icon = BarakaCategoryHierarchy.getIcon(sub);
 
           return ChoiceChip(
             selected: isSelected,
             showCheckmark: false,
             avatar: Icon(
               icon,
-              size: 15,
+              size: 13,
               color: isSelected ? Colors.white : BarakaColors.primary,
             ),
-            label: Text(
-              displayLabel,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                fontSize: 12,
-                color: isSelected ? Colors.white : BarakaColors.textPrimary,
-              ),
+            label: Text(sub),
+            labelStyle: TextStyle(
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 11,
+              color: isSelected ? Colors.white : BarakaColors.textPrimary,
             ),
             selectedColor: BarakaColors.primary,
             backgroundColor: Colors.white,
@@ -1868,16 +1897,84 @@ class _FeedViewState extends State<FeedView> {
               width: 1,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
             ),
             onSelected: (_) {
-              setState(() {
-                _selectedCategory = rawLabel;
-              });
+              setState(() => _selectedSubcategory = sub);
             },
           );
         },
       ),
+    );
+  }
+
+  Widget _buildCategorySelector() {
+    final categories = _currentCategories;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 44,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final cat = categories[index];
+              final rawLabel = cat['label'] as String;
+              final icon = cat['icon'] as IconData;
+              final isSelected = _selectedCategory == rawLabel;
+
+              String displayLabel = rawLabel;
+              if (rawLabel == 'Tous') {
+                if (_selectedMacroCategory == 'Alimentaire') {
+                  displayLabel = "Tout l'alimentaire";
+                } else if (_selectedMacroCategory == 'Services') {
+                  displayLabel = "Tous les services";
+                } else {
+                  displayLabel = "Toutes";
+                }
+              }
+
+              return ChoiceChip(
+                selected: isSelected,
+                showCheckmark: false,
+                avatar: Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected ? Colors.white : BarakaColors.primary,
+                ),
+                label: Text(
+                  displayLabel,
+                  style: TextStyle(
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    fontSize: 12,
+                    color: isSelected ? Colors.white : BarakaColors.textPrimary,
+                  ),
+                ),
+                selectedColor: BarakaColors.primary,
+                backgroundColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? BarakaColors.primary : BarakaColors.border,
+                  width: 1,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                onSelected: (_) {
+                  setState(() {
+                    _selectedCategory = rawLabel;
+                    _selectedSubcategory = 'Tous';
+                  });
+                },
+              );
+            },
+          ),
+        ),
+        _buildSubcategorySelector(),
+      ],
     );
   }
 
@@ -2480,62 +2577,7 @@ class EstablishmentGroupWidget extends StatelessWidget {
   }
 
   IconData _getCategoryIcon(String cat) {
-    final c = cat.toLowerCase();
-    if (c.contains('restau') ||
-        c.contains('café') ||
-        c.contains('cafe') ||
-        c.contains('food') ||
-        c.contains('plat')) {
-      return Icons.restaurant_rounded;
-    }
-    if (c.contains('beauté') ||
-        c.contains('beaute') ||
-        c.contains('spa') ||
-        c.contains('bien-être') ||
-        c.contains('bien etre') ||
-        c.contains('soin') ||
-        c.contains('coiff')) {
-      return Icons.spa_rounded;
-    }
-    if (c.contains('héberg') ||
-        c.contains('heberg') ||
-        c.contains('séjour') ||
-        c.contains('sejour') ||
-        c.contains('hotel') ||
-        c.contains('hôtel') ||
-        c.contains('riad')) {
-      return Icons.hotel_rounded;
-    }
-    if (c.contains('activité') ||
-        c.contains('activite') ||
-        c.contains('loisir')) {
-      return Icons.attractions_rounded;
-    }
-    if (c.contains('mobilité') ||
-        c.contains('mobilite') ||
-        c.contains('transport') ||
-        c.contains('auto') ||
-        c.contains('voiture')) {
-      return Icons.directions_car_rounded;
-    }
-    if (c.contains('shopping') ||
-        c.contains('service') ||
-        c.contains('boutique') ||
-        c.contains('mode')) {
-      return Icons.shopping_bag_rounded;
-    }
-    if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
-      return Icons.bakery_dining_rounded;
-    }
-    if (c.contains('épicer') ||
-        c.contains('epicer') ||
-        c.contains('supermarch')) {
-      return Icons.local_grocery_store_rounded;
-    }
-    if (c.contains('fleur') || c.contains('plante')) {
-      return Icons.local_florist_rounded;
-    }
-    return Icons.storefront_rounded;
+    return BarakaCategoryHierarchy.getIcon(cat);
   }
 
   String get _coverImageUrl {
@@ -3405,62 +3447,7 @@ class _DealCardWidgetState extends State<DealCardWidget> {
   }
 
   IconData _getCategoryIcon(String cat) {
-    final c = cat.toLowerCase();
-    if (c.contains('restau') ||
-        c.contains('café') ||
-        c.contains('cafe') ||
-        c.contains('food') ||
-        c.contains('plat')) {
-      return Icons.restaurant_rounded;
-    }
-    if (c.contains('beauté') ||
-        c.contains('beaute') ||
-        c.contains('spa') ||
-        c.contains('bien-être') ||
-        c.contains('bien etre') ||
-        c.contains('soin') ||
-        c.contains('coiff')) {
-      return Icons.spa_rounded;
-    }
-    if (c.contains('héberg') ||
-        c.contains('heberg') ||
-        c.contains('séjour') ||
-        c.contains('sejour') ||
-        c.contains('hotel') ||
-        c.contains('hôtel') ||
-        c.contains('riad')) {
-      return Icons.hotel_rounded;
-    }
-    if (c.contains('activité') ||
-        c.contains('activite') ||
-        c.contains('loisir')) {
-      return Icons.attractions_rounded;
-    }
-    if (c.contains('mobilité') ||
-        c.contains('mobilite') ||
-        c.contains('transport') ||
-        c.contains('auto') ||
-        c.contains('voiture')) {
-      return Icons.directions_car_rounded;
-    }
-    if (c.contains('shopping') ||
-        c.contains('service') ||
-        c.contains('boutique') ||
-        c.contains('mode')) {
-      return Icons.shopping_bag_rounded;
-    }
-    if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
-      return Icons.bakery_dining_rounded;
-    }
-    if (c.contains('épicer') ||
-        c.contains('epicer') ||
-        c.contains('supermarch')) {
-      return Icons.local_grocery_store_rounded;
-    }
-    if (c.contains('fleur') || c.contains('plante')) {
-      return Icons.local_florist_rounded;
-    }
-    return Icons.local_offer_outlined;
+    return BarakaCategoryHierarchy.getIcon(cat);
   }
 
   @override
@@ -4608,6 +4595,7 @@ class _MerchantViewState extends State<MerchantView> {
   final _discCtrl = TextEditingController();
   final _stockCtrl = TextEditingController(text: "5");
   String _category = 'Restauration & Cafés';
+  String _subcategory = 'Restaurants & Tables';
   bool _loading = false;
   DateTime _expiresAt = DateTime.now().add(const Duration(hours: 4));
 
@@ -4940,6 +4928,10 @@ class _MerchantViewState extends State<MerchantView> {
     setState(() => _loading = true);
 
     try {
+      final defaultImg = BarakaCategoryHierarchy.defaultImages[_subcategory] ??
+          BarakaCategoryHierarchy.defaultImages[_category] ??
+          'https://images.unsplash.com/photo-1541544741938-0af808871cc0';
+
       await supabase.from('deals').insert({
         'title': title,
         'business_name': business,
@@ -4947,11 +4939,10 @@ class _MerchantViewState extends State<MerchantView> {
         'discounted_price': discounted,
         'remaining_count': stock,
         'location': _locCtrl.text.trim(),
-        'category': _category,
+        'category': _subcategory,
         'latitude': 31.6346,
         'longitude': -8.0125,
-        'image_url':
-            'https://images.unsplash.com/photo-1541544741938-0af808871cc0',
+        'image_url': defaultImg,
         'expires_at': _expiresAt.toIso8601String(),
       });
 
@@ -5019,39 +5010,44 @@ class _MerchantViewState extends State<MerchantView> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
+            key: ValueKey('main_cat_$_category'),
             initialValue: _category,
             decoration: const InputDecoration(
-              labelText: "Catégorie",
+              labelText: "Catégorie principale",
               border: OutlineInputBorder(),
             ),
-            items: const [
-              DropdownMenuItem(
-                value: 'Restauration & Cafés',
-                child: Text('🍽️ Restauration & Cafés'),
-              ),
-              DropdownMenuItem(
-                value: 'Beauté & Bien-être',
-                child: Text('💆 Beauté & Bien-être'),
-              ),
-              DropdownMenuItem(
-                value: 'Hébergement & Séjours',
-                child: Text('🏨 Hébergement & Séjours'),
-              ),
-              DropdownMenuItem(
-                value: 'Activités & Loisirs',
-                child: Text('🎡 Activités & Loisirs'),
-              ),
-              DropdownMenuItem(
-                value: 'Mobilité & Transports',
-                child: Text('🚗 Mobilité & Transports'),
-              ),
-              DropdownMenuItem(
-                value: 'Shopping & Services',
-                child: Text('🛍️ Shopping & Services'),
-              ),
-            ],
+            items: BarakaCategoryHierarchy.allCategories.map((c) {
+              return DropdownMenuItem(
+                value: c.label,
+                child: Text(c.label),
+              );
+            }).toList(),
             onChanged: (val) {
-              if (val != null) setState(() => _category = val);
+              if (val != null) {
+                setState(() {
+                  _category = val;
+                  final subs = BarakaCategoryHierarchy.getSubcategoriesFor(val);
+                  _subcategory = subs.isNotEmpty ? subs.first : val;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: ValueKey('main_sub_${_category}_$_subcategory'),
+            initialValue: _subcategory,
+            decoration: const InputDecoration(
+              labelText: "Sous-catégorie précise",
+              border: OutlineInputBorder(),
+            ),
+            items: BarakaCategoryHierarchy.getSubcategoriesFor(_category).map((sub) {
+              return DropdownMenuItem(
+                value: sub,
+                child: Text(sub, overflow: TextOverflow.ellipsis),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) setState(() => _subcategory = val);
             },
           ),
           const SizedBox(height: 12),

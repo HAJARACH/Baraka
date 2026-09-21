@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../main.dart';
+import '../models/category_hierarchy.dart';
 import '../services/favorites_service.dart';
 import '../theme/app_theme.dart';
 
@@ -38,62 +39,7 @@ class EstablishmentDetailScreen extends StatelessWidget {
   }
 
   IconData _getCategoryIcon(String cat) {
-    final c = cat.toLowerCase();
-    if (c.contains('restau') ||
-        c.contains('café') ||
-        c.contains('cafe') ||
-        c.contains('food') ||
-        c.contains('plat')) {
-      return Icons.restaurant_rounded;
-    }
-    if (c.contains('beauté') ||
-        c.contains('beaute') ||
-        c.contains('spa') ||
-        c.contains('bien-être') ||
-        c.contains('bien etre') ||
-        c.contains('soin') ||
-        c.contains('coiff')) {
-      return Icons.spa_rounded;
-    }
-    if (c.contains('héberg') ||
-        c.contains('heberg') ||
-        c.contains('séjour') ||
-        c.contains('sejour') ||
-        c.contains('hotel') ||
-        c.contains('hôtel') ||
-        c.contains('riad')) {
-      return Icons.hotel_rounded;
-    }
-    if (c.contains('activité') ||
-        c.contains('activite') ||
-        c.contains('loisir')) {
-      return Icons.attractions_rounded;
-    }
-    if (c.contains('mobilité') ||
-        c.contains('mobilite') ||
-        c.contains('transport') ||
-        c.contains('auto') ||
-        c.contains('voiture')) {
-      return Icons.directions_car_rounded;
-    }
-    if (c.contains('shopping') ||
-        c.contains('service') ||
-        c.contains('boutique') ||
-        c.contains('mode')) {
-      return Icons.shopping_bag_rounded;
-    }
-    if (c.contains('boulang') || c.contains('pain') || c.contains('patiss')) {
-      return Icons.bakery_dining_rounded;
-    }
-    if (c.contains('épicer') ||
-        c.contains('epicer') ||
-        c.contains('supermarch')) {
-      return Icons.local_grocery_store_rounded;
-    }
-    if (c.contains('fleur') || c.contains('plante')) {
-      return Icons.local_florist_rounded;
-    }
-    return Icons.storefront_rounded;
+    return BarakaCategoryHierarchy.getIcon(cat);
   }
 
   String get _coverImageUrl {
